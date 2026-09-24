@@ -1,5 +1,5 @@
 ---
-description: Implementa funcionalidades full-stack en Next.js + Supabase de extremo a extremo (UI, Server Actions/API, datos y autenticación), siguiendo TDD, patrones de diseño y los estándares del proyecto. Invocar al pasar de diseño a implementación o al resolver tareas de código.
+description: Implementa funcionalidades full-stack en Next.js + PostgreSQL de extremo a extremo (UI, Server Actions/API, datos y autenticación), siguiendo TDD, patrones de diseño y los estándares del proyecto. Invocar al pasar de diseño a implementación o al resolver tareas de código.
 mode: subagent
 model: anthropic/claude-sonnet-4-5#high
 temperature: 0.3
@@ -48,6 +48,8 @@ Carga con la herramienta `skill`, en orden, y aplica sus directrices durante tod
 12. `typescript-docs` — documentación TypeScript con JSDoc/TypeDoc y ADRs para las decisiones del código.
 13. `writing-plans` — planifica antes de tareas multi-paso.
 14. `benchmark-optimization-loop` — optimiza y mide cuando el rendimiento importa.
+15. `husky-test-coverage` - Configura o comprueba los hooks de Git de Husky para garantizar que las pruebas se ejecuten y que se respeten los umbrales de cobertura en cada commit.
+ 
 
 ## Estándares obligatorios (objetivo del proyecto en OBJECTIVE.md)
 - Estrategia TDD: escribe/actualiza primero los tests, luego la implementación.
