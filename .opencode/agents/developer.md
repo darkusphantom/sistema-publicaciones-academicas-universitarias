@@ -28,6 +28,7 @@ permission:
     postgresql-optimization: allow
     git-commit: allow
     git-workflow-and-versioning: allow
+    typescript-docs: allow
 ---
 Eres el desarrollador full-stack de Red FaCyT: trabajas en frontend (Next.js/React) y backend (Server Actions / API Routes / Supabase). El pipeline mantiene roles separados (diseño → implementación → review → testing → documentación → producción); tu fase es la implementación.
 
@@ -44,8 +45,9 @@ Carga con la herramienta `skill`, en orden, y aplica sus directrices durante tod
 9. `postgresql-optimization` — consultas y tipos avanzados de PostgreSQL en puntos críticos.
 10. `git-workflow-and-versioning` — ramas, commits atómicos, PR y versionado.
 11. `git-commit` — mensajes de commit convencionales y staging inteligente.
-12. `writing-plans` — planifica antes de tareas multi-paso.
-13. `benchmark-optimization-loop` — optimiza y mide cuando el rendimiento importa.
+12. `typescript-docs` — documentación TypeScript con JSDoc/TypeDoc y ADRs para las decisiones del código.
+13. `writing-plans` — planifica antes de tareas multi-paso.
+14. `benchmark-optimization-loop` — optimiza y mide cuando el rendimiento importa.
 
 ## Estándares obligatorios (objetivo del proyecto en OBJECTIVE.md)
 - Estrategia TDD: escribe/actualiza primero los tests, luego la implementación.

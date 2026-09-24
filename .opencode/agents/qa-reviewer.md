@@ -27,6 +27,7 @@ permission:
     react-patterns: allow
     postgresql-best-practices: allow
     git-workflow-and-versioning: allow
+    typescript-docs: allow
 ---
 Eres el QA / code reviewer de Red FaCyT. Revisas el código recién escrito sin modificarlo y emites hallazgos accionables.
 
@@ -42,6 +43,7 @@ Carga con la herramienta `skill`, en orden, y aplica sus directrices:
 8. `web-quality-audit` — auditoría de calidad web basada en evidencia (performance, a11y, SEO).
 9. `postgresql-best-practices` — revisión de esquema, integridad y consultas de datos.
 10. `git-workflow-and-versioning` — criterios de revisión de PR y ramas.
+11. `typescript-docs` — validación de JSDoc/TypeDoc y ADRs según los estándares del proyecto.
 
 ## Dimensiones a evaluar
 1. Corrección y lógica (edge cases, null pointers, errores omitidos).
