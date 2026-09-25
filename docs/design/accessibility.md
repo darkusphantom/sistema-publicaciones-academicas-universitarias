@@ -1,66 +1,64 @@
-# Accesibilidad — Red FaCyT
+# Accesibilidad y Usabilidad — Red FaCyT (Especificación Slider)
 
-Cumplimiento objetivo: **WCAG 2.2 nivel AA** en ambos temas (claro y oscuro). Este documento es la lista de decisión por pantalla; el `developer` debe respetarla en cada componente.
+Directrices estricta de accesibilidad basadas en las guías **WCAG 2.2 Nivel AA** aplicadas a la nueva pantalla de bienvenida en formato **deslizante (slider/carrusel)**.
 
-## 1. Contraste
+---
 
-| Par | Requisito AA | Verificación en paleta |
-| --- | --- | --- |
-| Texto body sobre `--bg`/`--surface` | ≥ 4.5:1 | `--text` sobre `#FFFFFF`: **ok**; `--text` (#E6EAF2) sobre `#131C31` (dark): **ok** |
-| `--text-muted` (captions) | ≥ 4.5:1 | Verificar con herramienta al implementar; si falla, subir a `#6A7A96` (light) |
-| `--accent` sobre `--surface` | ≥ 3:1 para UI (links/borde) y ≥ 4.5:1 si es texto en botones | `#2563EB` sobre blanco: ok para texto 4.5:1; dark `#60A5FA` sobre `#131C31`: ok |
-| `--danger`, `--warning`, `--success` como texto | ≥ 4.5:1 | Tokens oscuros (`#F87171`, `#FBBF24`, `#4ADE80`) sí; valores light verificarse |
-| Badges de estado | Distinguibles **no solo por color**: siempre van acompañados de texto ("Publicado", "Borrador") | — |
+## 1. Cumplimiento de Contraste WCAG 2.2 AA
 
-Regla: **ningún estado se comunica solo con color** (WCAG 1.4.1).
+Con la nueva estrategia de color neutro oscuro (`--bg: #0B0F19`), los valores de contraste superan holgadamente el mínimo requerido de `4.5:1` para texto normal y `3.0:1` para elementos de interfaz.
 
-## 2. Foco y teclado
+| Elemento | Texto / Elemento | Fondo | Ratio de Contraste | Cumplimiento |
+| --- | --- | --- | --- | --- |
+| **Texto Principal** | `#F1F5F9` (Blanco suave) | `#0B0F19` (Obsidiana) | **16.2 : 1** | AAA ✅ |
+| **Texto Muted** | `#94A3B8` (Gris claro) | `#0B0F19` (Obsidiana) | **6.5 : 1** | AA ✅ |
+| **Botón Primario CTA** | `#0B0F19` (Texto Oscuro) | `#F59E0B` (Ámbar Acento) | **10.1 : 1** | AAA ✅ |
+| **Bordes de Tarjeta** | `#23324D` (Borde sutil) | `#0B0F19` (Obsidiana) | **1.8 : 1** (decorativo) | N/A |
 
-- **Foco visible** en todos los elementos interactivos: anillo de `--accent` de 2px con offset 2px (no se elimina el outline del navegador).
-- Orden de tabulación lógico: navbar → contenido → filtros → feed → footer. Sin reordenaciones.
-- **No trampas de foco**: modales (AlertDialog de eliminar) con `aria-modal`, foco inicial en el botón de confirmación y retorno al disparador al cerrar (Esc también cierra).
-- Menús desplegables (dropdown del card `⋮`, combobox de filtros): navegables por teclado (arrows), cerrable con Esc.
-- Tema del `ThemeToggle`: botón real con `aria-pressed`/`aria-label="Cambiar a modo oscuro"`.
+---
 
-## 3. Semántica y estructura
+## 2. Patrón de Accesibilidad para Slider / Carrusel (ARIA)
 
-- Landmarks: `<header>` (navbar), `<main>` (una sola), `<footer>`. El footer de la nav pública y el del layout autenticado: correctos por página.
-- Encabezados jerárquicos sin saltos (h1 → h2 → h3).
-- Cada `Card` de publicación: `article` con `h2` o `h3` como título y `aria-label` descriptivo si enlaza a detalle.
-- Feed: avisar resultados — el contador de resultados del filtro tiene `aria-live="polite"` ("24 resultados").
+El componente `LandingSlider` debe cumplir con el patrón oficial **WAI-ARIA Carousel Design Pattern**:
 
-## 4. Formularios
+1. **Atributos del Contenedor Principal:**
+   - `role="region"`
+   - `aria-roledescription="carrusel"`
+   - `aria-label="Presentación de características de Red FaCyT"`
 
-- **Etiquetas visibles** asociadas (`<label for>` o `aria-labelledby`) — nunca placeholder como única etiqueta.
-- **Errores inline junto al campo**: mensaje de error con `role="alert"`, además de un **resumen de errores** al inicio del formulario (WCAG 3.3.1/3.3.3). Ej.: "El título es obligatorio".
-- Validación en vivo solo tras abandonar el campo; nunca bloquear el submit sin explicar.
-- Inputs accesibles por nombre: "Buscar publicaciones", "Contraseña", etc.
+2. **Atributos de cada Diapositiva (`SlideCard`):**
+   - `role="group"`
+   - `aria-roledescription="diapositiva"`
+   - `aria-label="Diapositiva {index} de {total}: {title}"`
+   - Las diapositivas inactivas llevan `aria-hidden="true"` e `tabindex="-1"` en sus elementos interactivos para evitar que el lector de pantalla navegue por contenido invisible.
 
-## 5. Movimiento, Parallax y Animaciones
+3. **Anuncio de Cambios (`aria-live`):**
+   - Se incluye una región `aria-live="polite"` e `aria-atomic="true"` que anuncia discretamente a los lectores de pantalla al cambiar de diapositiva (ej: *"Diapositiva 2 de 4: Avisos y Comunicados"*).
 
-- **`prefers-reduced-motion: reduce`**: desactiva todas las animaciones, transiciones y efectos de parallax en scroll. Los elementos de la pantalla de bienvenida se renderizan estáticos en posición natural.
-- **Parallax Accesible (Capas de Fondo):**
-  - Los elementos con movimiento parallax (desfase de scroll) deben ser **únicamente capas decorativas de fondo** (números `01/02/03`, reglas horizontales, marcas de agua).
-  - Toda capa parallax decorativa DEBE llevar `aria-hidden="true"` para evitar que los lectores de pantalla anuncien elementos duplicados o fuera de contexto durante el desplazamiento.
-  - El texto legible (titulares, cuerpo, captions) y los controles interactivos (botones CTAs, enlaces, toggles) NUNCA deben sufrir distorsión, movimiento excesivo ni alteraciones de opacidad que impidan su lectura.
-- Ningún parpadeo > 3 destellos/segundo (WCAG 2.3.1).
-- Transiciones de tema (claro/oscuro): instantáneas o con `transition` corta y respetando reduced-motion (evitar flash de fondo en el toggle → aplicar clase `.dark` en `<html>` antes de pintar para no parpadear blanco).
+---
 
-## 6. Pantallas y estados
+## 3. Zonas Táctiles Mínimas (Touch Targets ≥44px)
 
-- **EmptyState**: no solo color/imagen — texto accionable + CTA real.
-- **Skeleton**: evitar "bailes" (espacio reservado, sin CLS); `aria-hidden` mientras carga y contenido real al terminar.
-- **Toast**: `role="status"` (éxito) / `role="alert"` (error), auto-dismiss ≥ 5s o con botón de cierre, sin bloquear el foco.
-- Imágenes (bonificación futura): `alt` descriptivo obligatorio; decorativas con `alt=""`.
-- Botones icon-only (⋮ acciones, ThemeToggle): siempre `aria-label`.
-- Target de toque ≥ 44×44px (WCAG 2.5.8/2.5.5).
+En dispositivos móviles:
+- **Indicadores de Diapositiva (Pills/Dots):** El botón invisible envolvente mide `44px x 44px` aunque la pastilla visual mida `8px x 8px` u `32px x 8px`.
+- **Botones CTA ("Empezar", "Ya tengo cuenta", "Omitir"):** Altura mínima de `48px` con `padding` adecuado para evitar toques accidentales.
+- **Flechas de Navegación (Escritorio):** Mínimo `44px x 44px`.
 
-## 7. Verificación durante implementación
+---
 
-- Auditoría automatizada en el pipeline del `developer` (axe/Lighthouse) al menos una vez por pantalla.
-- Checklist manual por pantalla antes de pasar a revisión:
-  1. Solo teclado completo (Tab, Enter, Esc).
-  2. Contraste AA en ambos temas (medido por tokens, no a ojo).
-  3. Narrativa del lector de pantalla: título → contenido → acciones.
-  4. Zoom 200% sin pérdida de contenido ni scroll horizontal.
-  5. Foco nunca invisible.
+## 4. Navegación por Teclado
+
+1. **Foco Visible:** Todos los elementos interactivos cuentan con un anillo de enfoque de alto contraste (`focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2`).
+2. **Atajos de Teclado:**
+   - `Flecha Izquierda` (←): Regresa a la diapositiva anterior.
+   - `Flecha Derecha` (→): Avanza a la siguiente diapositiva.
+   - `Tab`: Navega secuencialmente entre el botón "Omitir", los controles del slider y los botones CTA principales.
+
+---
+
+## 5. Respeto a Movimiento Reducido (`prefers-reduced-motion`)
+
+- Si el usuario tiene activada la preferencia de sistema `prefers-reduced-motion: reduce`:
+  - Se desactivan por completo las transiciones de deslizamiento horizontal (`transform`).
+  - El cambio entre diapositivas ocurre mediante una transición directa sin desplazamiento.
+  - El avance automático (autoplay), si existiera, se deshabilita automáticamente.

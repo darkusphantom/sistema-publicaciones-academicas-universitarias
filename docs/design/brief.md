@@ -1,60 +1,59 @@
-# Brief de diseño — Red FaCyT
+# Brief de diseño — Red FaCyT (Estrategia Rediseñada: Bienvenida Mobile-First & Slider)
 
-## 1. Concepto
+## 1. Concepto e Identidad
 
-**Identidad editorial-institucional** para la Facultad Experimental de Ciencias y Tecnología (FaCyT). La interfaz debe parecer la gaceta electrónica de una facultad, no una red social comercial. Esto responde directamente al enunciado del proyecto: *"No se evaluará la copia estética de redes sociales comerciales"*.
+**Gaceta digital universitaria con enfoque Mobile-First y presentación mediante Carrusel/Deslizante Interactivo (Slider).**
+La plataforma institucional de la Facultad Experimental de Ciencias y Tecnología (FaCyT) presenta sus características clave mediante una experiencia ágil, envolvente y de rápida comprensión desde dispositivos móviles y de escritorio.
 
-Tres principios rectores:
-1. **Sobriedad académica** — orden, jerarquía clara, cero ruido decorativo.
-2. **Confianza institucional** — azul profundo como ancla, formato editorial (titulares serif).
-3. **Ciencia y tecnología** — un único acento azul vivo que guía la acción, sin gradientes ni burbujas de red social.
+Tres principios rectores de esta nueva estrategia:
+1. **Mobile-First & Responsividad Total** — Diseñado primariamente para pantallas de teléfonos inteligentes (control táctil/swipe) y adaptado fluidamente a computadoras de escritorio.
+2. **Estrategia de Color Equilibrada (Charcoal/Obsidian Dark Base)**: Eliminación del fondo totalmente azul. Se utiliza un fondo neutro oscuro profundo (grafito/obsidiana) para que los colores institucionales (azul FaCyT) y de contraste (ámbar/acento tecnológico) destaquen como superficies y llamadas a la acción sin saturar la vista.
+3. **Presentación Narrativa en Deslizante (Slider)**: En lugar de desplazamientos verticales complejos, la bienvenida presenta 3 a 4 diapositivas concisas que explican qué es la red, sus pilares (noticias, defensas, eventos) y guía al registro/login.
 
-## 2. Audiencia y tono
+## 2. Audiencia y Tono
 
-- **Audiencia:** estudiantes, profesores y administración de la facultad.
-- **Tono:** formal pero cercano; lenguaje de la interfaz en voz activa y oraciones cortas ("Publicar", "Guardar cambios", "Publicado").
-- **Idioma de la UI:** español (interfaz) — el **código** permanece en inglés por regla del proyecto.
+- **Audiencia:** Estudiantes, profesores, investigadores y personal administrativo de la facultad.
+- **Tono:** Académico, limpio, dinámico, accesible e instructivo.
+- **Idioma de la UI:** Español. El código y los identificadores permanecen en inglés.
 
-## 3. Sistema de color — modo claro/oscuro
+## 3. Sistema de Color Rediseñado (Manejo de Color de Alto Contraste)
 
-Solo los colores conmutan entre temas; tipografía y espaciado son fijos. Los valores oscuros usan tintes más claros del mismo azul para mantener contraste WCAG AA.
+Para evitar una interfaz excesivamente azul, el fondo base pasa a ser un **gris oscuro neutro (Obsidian/Charcoal)** en modo oscuro o un gris editorial suave en modo claro. El azul institucional actúa como marca/tarjeta y el ámbar/cian como acento secundario de acción.
 
 | Token | Light | Dark | Uso |
 | --- | --- | --- | --- |
-| `--bg` | `#F5F7FA` | `#0B1220` | Fondo base |
-| `--surface` | `#FFFFFF` | `#131C31` | Cards, nav, inputs |
-| `--surface-muted` | `#EEF1F6` | `#1C2740` | Secciones destacadas, hover |
-| `--text` | `#172033` | `#E6EAF2` | Texto principal |
-| `--text-muted` | `#51607A` | `#93A1BC` | Metadatos, captions |
-| `--primary` | `#1E3A5F` | `#7FA8E8` | Azul institucional (masthead, marca) |
-| `--accent` | `#2563EB` | `#60A5FA` | Único azul vivo: CTAs, links, foco |
-| `--border` | `#D8DEEA` | `#2B3A57` | Bordes y divisores |
-| `--danger` | `#B91C1C` | `#F87171` | Errores y estados destructivos |
-| `--success` | `#15803D` | `#4ADE80` | Éxito (toast, publicado) |
-| `--warning` | `#B45309` | `#FBBF24` | Avisos (oculto, pendiente) |
+| `--bg` | `#F8FAFC` | `#0B0F19` | Fondo base (gris neutro/obsidiana, NUNCA azul puro) |
+| `--surface` | `#FFFFFF` | `#141C2E` | Tarjetas del deslizante, contenedores de diálogo |
+| `--surface-muted` | `#F1F5F9` | `#1E293B` | Fondo secundario de diapositivas y pill de navegación |
+| `--text` | `#0F172A` | `#F1F5F9` | Texto principal (máxima legibilidad) |
+| `--text-muted` | `#475569` | `#94A3B8` | Subtítulos, captions, indicadores inactivos |
+| `--primary` | `#1E3E66` | `#3B82F6` | Azul institucional FaCyT (encabezados, insignias) |
+| `--accent` | `#D97706` | `#F59E0B` | **Acento Secundario (Ámbar Académico)**: CTAs principales, estado activo del slider |
+| `--accent-teal` | `#0284C7` | `#38BDF8` | **Acento Tecnológico (Cian)**: Enlaces, resaltados de características |
+| `--border` | `#E2E8F0` | `#23324D` | Bordes finos de tarjetas y separadores |
+| `--danger` | `#DC2626` | `#EF4444` | Errores o alertas |
+| `--success` | `#16A34A` | `#22C55E` | Confirmaciones y estados |
 
 ## 4. Tipografía
 
-- **Titulares (display):** serif editorial — da el carácter académico de "gaceta de la facultad".
-- **Cuerpo y UI:** sans sansserif legible — neutral, sin personalidad ruidosa.
-- **Escala:** una sola secuencia clara `display → h1 → h2 → h3 → body → caption`. Sin eyebrows en mayúsculas, sin etiquetas decorativas sobre el contenido.
-- **Reglas:** cuerpo ≥ 16px, line-height 1.5–1.6, líneas ≤ 80 caracteres. Serif en cuerpo: line-height ligeramente mayor.
+- **Titulares (Display & H1):** Serif Editorial (ej. Georgia/Playfair/Merriweather) para el carácter universitario y de gaceta.
+- **Cuerpo y Controles de UI:** Sans-serif moderno y legible (ej. Inter, system-ui) con excelente legibilidad en pantallas pequeñas.
+- **Escala Responsiva:**
+  - Móvil: H1 `1.75rem` (28px), Subtítulo `1rem` (16px).
+  - Escritorio: H1 `2.5rem` (40px), Subtítulo `1.125rem` (18px).
 
-## 5. Layout
+## 5. Layout Mobile-First & Responsividad
 
-- **Alineación:** izquierda (editorial); centrado solo en elementos puntuales (hero, formular).
-- **Grid del feed:** cards institucionales (borde fino + superficie), sombras mínimas o nulas. Nada de "flotar" tarjetas estilo red social.
-- **Mobile-first:** una columna en móvil; grid 2–3 columnas en escritorio con contenedor de ancho máximo (~1120px).
-- **Navegación:** `(main)` con navbar superior (logo + enlaces + ThemeToggle + usuario); en móvil, barra inferior con ≤5 destinos.
+- **Formato Móvil (Base):**
+  - Deslizante a pantalla completa o contenedor card de alto impacto (`min-h-[75vh]`).
+  - Soporte de gestos táctiles (Swipe izquierda/derecha con `touch-action: pan-y`).
+  - Indicadores de diapositiva estilo "dots/pills" con tamaño mínimo de toque (44px target).
+- **Formato Escritorio (Adaptación):**
+  - Contenedor centrado con ancho máximo (`max-w-4xl` ~900px).
+  - Botones de navegación laterales (flechas Anterior / Siguiente).
+  - Distribución de 2 columnas dentro de la card: texto a la izquierda, ilustración a la derecha.
 
-## 6. Guías de contenido (voz de la interfaz)
+## 6. Movimiento y Animación en Slider
 
-- Nombres por lo que el usuario entiende, no por el sistema: "Publicar", no "Enviar a repositorio".
-- La acción mantiene el mismo nombre en todo el flujo: botón "Publicar" → toast "Publicación publicada".
-- Errores concretos y sin disculpas: "El título es obligatorio", no "Ha ocurrido un error".
-- Pantallas vacías = invitación a actuar: "Aún no hay publicaciones. Crea la primera".
-
-## 7. Movimiento
-
-- Mínimo y solo si responde a una acción del usuario (abrir, expandir, confirmar).
-- Respetar `prefers-reduced-motion`. Sin animaciones decorativas de entrada en scroll.
+- Transiciones horizontales suaves (`transform: translateX(...)` con `cubic-bezier(0.16, 1, 0.3, 1)` de 350ms).
+- Respeto estricto a `prefers-reduced-motion: reduce` (reemplaza deslizamiento por fundido instantáneo).

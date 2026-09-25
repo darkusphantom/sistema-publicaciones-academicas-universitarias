@@ -49,7 +49,7 @@ describe("route smoke tests", () => {
     render(<LandingPage />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "FaCyT" }),
+      screen.getByRole("heading", { level: 1, name: /Red FaCyT/i }),
     ).toBeInTheDocument();
   });
 

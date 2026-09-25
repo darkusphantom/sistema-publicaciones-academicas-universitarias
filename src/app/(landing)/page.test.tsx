@@ -1,16 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { ONBOARDING_SEEN_VALUE, ONBOARDING_STORAGE_KEY } from "@/lib/onboarding";
 
-const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+const { push, replace } = vi.hoisted(() => ({
+  push: vi.fn(),
+  replace: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace }),
+  useRouter: () => ({ push, replace }),
 }));
 
 const { default: LandingPage } = await import("./page");
 
 beforeEach(() => {
+  push.mockClear();
   replace.mockClear();
   window.localStorage.clear();
 });
@@ -28,132 +32,69 @@ describe("LandingPage", () => {
     expect(screen.getByRole("contentinfo")).toBeInTheDocument();
   });
 
-  it("keeps a single h1 as the anchor of the editorial hierarchy", () => {
+  it("renders the interactive carousel region", () => {
     render(<LandingPage />);
 
-    expect(
-      screen.getAllByRole("heading", { level: 1 }),
-    ).toHaveLength(1);
-  });
-
-  it("publishes the three editorial blocks as h2 without skipping levels", () => {
-    render(<LandingPage />);
-
-    const headings = screen
-      .getAllByRole("heading")
-      .map((heading) => heading.tagName);
-
-    expect(headings).toEqual(["H1", "H2", "H2", "H2"]);
-  });
-
-  it("renders the final copy of the 'what it offers' section", () => {
-    render(<LandingPage />);
-
-    const section = screen.getByRole("region", { name: "Qué ofrece" });
-    expect(
-      within(section).getByRole("heading", { name: "Noticias y avisos" }),
-    ).toBeInTheDocument();
-    expect(
-      within(section).getByText(
-        "Comunicados oficiales y agenda en un solo lugar.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      within(section).getByRole("heading", { name: "Académico" }),
-    ).toBeInTheDocument();
-    expect(
-      within(section).getByText("Cursos, talleres y defensas, organizados."),
-    ).toBeInTheDocument();
-    expect(
-      within(section).getByRole("heading", { name: "Vida universitaria" }),
-    ).toBeInTheDocument();
-    expect(
-      within(section).getByText(
-        "Eventos y actividades para toda la comunidad.",
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("renders the background numbers as decorative planes", () => {
-    const { container } = render(<LandingPage />);
-
-    const planes = container.querySelectorAll('[data-parallax-motion="drift"]');
-    expect(planes).toHaveLength(5);
-    planes.forEach((plane) => {
-      expect(plane).toHaveAttribute("aria-hidden", "true");
+    const carousels = screen.getAllByRole("region", {
+      name: "Presentación de características de Red FaCyT",
     });
+    expect(carousels.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders the audience block", () => {
+  it("renders the first slide heading and content", () => {
     render(<LandingPage />);
 
-    const section = screen.getByRole("region", { name: "Roles" });
     expect(
-      within(section).getByText(
-        "Para profesores, estudiantes y administración.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      within(section).getByText("Estudiante · Profesor · Admin"),
+      screen.getByText("Red FaCyT: La plataforma de nuestra facultad")
     ).toBeInTheDocument();
   });
 
-  it("closes with a single primary CTA and a ghost alternative", () => {
+  it("marks onboarding as seen and redirects to /login when clicking Omitir", () => {
     render(<LandingPage />);
 
-    const closing = screen.getByRole("region", { name: "Cierre" });
-    const cta = within(closing).getByRole("link", { name: "Empezar" });
-    expect(cta).toHaveAttribute("href", "/register");
-    expect(cta).toHaveClass("bg-accent");
-    expect(
-      within(closing).getByRole("link", { name: "Ya tengo cuenta" }),
-    ).toHaveAttribute("href", "/login");
-  });
-
-  it("uses the accent token exactly once in the whole screen", () => {
-    const { container } = render(<LandingPage />);
-
-    expect(container.querySelectorAll(".bg-accent")).toHaveLength(1);
-  });
-
-  it("paints the offering numbers and the masthead ghost as decorative planes", () => {
-    const { container } = render(<LandingPage />);
-
-    const drifting = Array.from(
-      container.querySelectorAll('[data-parallax-motion="drift"]'),
-    );
-    expect(drifting.map((plane) => plane.textContent)).toEqual([
-      "FaCyT · Est.",
-      "01",
-      "02",
-      "03",
-      "Red FaCyT",
-    ]);
-    for (const plane of drifting) {
-      expect(plane).toHaveAttribute("aria-hidden", "true");
-      expect(plane.textContent).not.toBe("");
-    }
-  });
-
-  it("marks the introduction as seen when the primary CTA is used", () => {
-    render(<LandingPage />);
-
-    fireEvent.click(screen.getByRole("link", { name: "Empezar" }));
+    const skipBtn = screen.getByRole("button", { name: "Omitir" });
+    fireEvent.click(skipBtn);
 
     expect(window.localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe(
-      ONBOARDING_SEEN_VALUE,
+      ONBOARDING_SEEN_VALUE
     );
+    expect(push).toHaveBeenCalledWith("/login");
   });
 
-  it("does not mark the introduction when the login link is used", () => {
+  it("navigates carousel slides and completes onboarding on last slide", () => {
     render(<LandingPage />);
 
-    fireEvent.click(screen.getByRole("link", { name: "Iniciar sesión" }));
+    const nextBtn = screen.getByRole("button", { name: "Siguiente ➔" });
 
-    expect(window.localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBeNull();
+    // Advance through slides
+    fireEvent.click(nextBtn); // slide 2
+    fireEvent.click(nextBtn); // slide 3
+    fireEvent.click(nextBtn); // slide 4 (last slide)
+
+    expect(
+      screen.getByText("Un espacio para todos los perfiles")
+    ).toBeInTheDocument();
+
+    const finishBtn = screen.getByRole("button", { name: "Empezar ahora" });
+    fireEvent.click(finishBtn);
+
+    expect(window.localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe(
+      ONBOARDING_SEEN_VALUE
+    );
+    expect(push).toHaveBeenCalledWith("/register");
   });
 
-  it("sends recurrent visitors to the login", () => {
+  it("redirects to /login without marking onboarding when clicking Ya tengo cuenta", () => {
+    render(<LandingPage />);
+
+    const loginBtn = screen.getByRole("button", { name: "Ya tengo cuenta" });
+    fireEvent.click(loginBtn);
+
+    expect(window.localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBeNull();
+    expect(push).toHaveBeenCalledWith("/login");
+  });
+
+  it("sends recurrent visitors to /login via WelcomeGate", () => {
     window.localStorage.setItem(ONBOARDING_STORAGE_KEY, ONBOARDING_SEEN_VALUE);
 
     render(<LandingPage />);

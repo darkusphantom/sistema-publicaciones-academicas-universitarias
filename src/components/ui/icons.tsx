@@ -67,3 +67,31 @@ export function ArrowRightIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * Left chevron icon: previous slide button affordance.
+ *
+ * @param props - Icon props.
+ * @returns The SVG element.
+ */
+export function ChevronLeftIcon({ className }: IconProps) {
+  return (
+    <svg {...ICON_BASE_PROPS} width={24} height={24} className={className}>
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+/**
+ * Right chevron icon: next slide button affordance.
+ *
+ * @param props - Icon props.
+ * @returns The SVG element.
+ */
+export function ChevronRightIcon({ className }: IconProps) {
+  return (
+    <svg {...ICON_BASE_PROPS} width={24} height={24} className={className}>
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
