@@ -1,7 +1,6 @@
 ---
 description: Diseña la dirección visual y funcional de la interfaz (Red FaCyT) y produce guías, tokens y prototipos en Markdown que el agente developer implementará. Invocar en la fase de diseño al crear UI nueva o rediseñar.
 mode: subagent
-model: anthropic/claude-sonnet-4-5#high
 temperature: 0.7
 permission:
   read: allow
