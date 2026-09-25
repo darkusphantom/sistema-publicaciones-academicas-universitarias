@@ -13,6 +13,12 @@
       "skillPath": "plugins/backend-development/skills/architecture-patterns/SKILL.md",
       "computedHash": "a66aaa5aa49b75bec12b6270dcde8794b1f0cc75fbb9ecb999e43f8b723b461f"
     },
+    "better-auth-security-best-practices": {
+      "source": "better-auth/skills",
+      "sourceType": "github",
+      "skillPath": "security/SKILL.md",
+      "computedHash": "7a230edf3a24ce18162cb4379f59b6a19b8d24ca04db530609d0f15cede556dc"
+    },
     "caveman": {
       "source": "juliusbrussee/caveman",
       "sourceType": "github",
@@ -42,6 +48,12 @@
       "sourceType": "github",
       "skillPath": "skills/git-workflow-and-versioning/SKILL.md",
       "computedHash": "e8e0d1cc98c0a6b81d2979442ae92addae32cd5194fb5c4eac4ac5228b408770"
+    },
+    "husky-test-coverage": {
+      "source": "shipshitdev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/husky-test-coverage/SKILL.md",
+      "computedHash": "3099b41f0a8e8c7350410fc2c73efab8e072a27d5f8f5aca7ff78b35c261c494"
     },
     "next-best-practices": {
       "source": "vercel-labs/openreview",
@@ -84,6 +96,12 @@
       "sourceType": "github",
       "skillPath": "skills/react-patterns/SKILL.md",
       "computedHash": "44d2c6304ff7ea20643a0203b74de9c7a42e1f70a2b73a5762500dea385dfc44"
+    },
+    "security-best-practices": {
+      "source": "openai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/.curated/security-best-practices/SKILL.md",
+      "computedHash": "c27616fb4e27999605b90b261dc729784420c8d77bd1a98748384ffaa5b35704"
     },
     "typescript-docs": {
       "source": "giuseppe-trisciuoglio/developer-kit",
