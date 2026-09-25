@@ -22,28 +22,33 @@ Reglas de acceso (a implementar como guardas en la fase de backend; simuladas en
 
 ## 2. Esquemas por pantalla (ASCII, mobile-first; escritorio = 2–3 columnas)
 
-### 2.1 `/` Bienvenida (public)
+### 2.1 `/` Bienvenida (Landing Page — Público)
 
-Introducción **parallax vertical** para primeros ingresos (skip en recurrentes). Ver spec completa en [`welcome.md`](welcome.md) — estructura, copy, comportamiento flag `localStorage['facy:onboarding']`, wireframe, a11y y tokens.
+Introducción **parallax vertical** (5 capas) para primeros ingresos (con guard de onboarding `localStorage['facy:onboarding']`). 
+
+> [!IMPORTANT]
+> **Layout Independiente:** Utiliza el layout de `(landing)` (`LandingHeader` + `LandingFooter`). **NO renderiza la `Navbar`, `Sidebar` ni `BottomNav` del shell autenticado `(main)`.**
+
+Ver especificación detallada en [`welcome.md`](welcome.md) — estructura de capas, copy final, a11y (WCAG 2.2 AA) y tokens.
+
 ```
-┌─────────────────────────────────────────────┐
-│ [FaCyT logo]            [🌙][Omitir ↦]      │  ← solo primer ingreso; foco: Skip
-├─────────────────────────────────────────────┤
-│   FaCyT                                     │  ← h1 serif (display) — ancla
-│   Facultad Experimental de Ciencias         │
-│   y Tecnología                              │
-│  ───────────────────────────  ← fina, se separa
-│   La gaceta digital de la facultad:         │
-│   noticias, avisos y vida universitaria.    │
-│   [ Iniciar sesión ]  [ Registrar ]         │
-│   01 Noticias y avisos · 02 Académico       │
-│   03 Vida universitaria                     │  ← capa parallax 2
-│   Para profesores, estudiantes y            │
-│   administración. Estudiante · Profesor ·   │  ← capa parallax 3
-│   Admin                                     │
-│   [ Empezar ]  [ Ya tengo cuenta ]          │  ← CTA único (acento)
-│  Marca de agua: Red FaCyT                   │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│ [FaCyT Logo]                         [🌙 Tema] [Omitir ↦]  │  ← LandingHeader (z-50)
+├─────────────────────────────────────────────────────────────┤
+│   FaCyT                                                     │  ← Capa 1: H1 Serif Display
+│   Facultad Experimental de Ciencias y Tecnología            │
+│  ─────────────────────────────────────────────────────────  │  ← Línea divisoria que se separa
+│   La gaceta digital de la facultad: noticias,              │
+│   avisos y vida universitaria.                              │
+│   [ Empezar ]  [ Ya tengo cuenta ]                          │  ← CTA primario con --accent
+│                                                             │
+│   01 Noticias y avisos · 02 Académico · 03 Vida Univ.       │  ← Capa 2: Números 01/02/03 de fondo
+│   Para profesores, estudiantes y administración.           │  ← Capa 3: Roles + Regla extensible
+│   [ Empezar ]  [ Ya tengo cuenta ]                          │  ← Capa 4: CTA cierre
+│  Marca de agua: Red FaCyT                                   │
+├─────────────────────────────────────────────────────────────┤
+│ © 2026 Facultad Experimental de Ciencias y Tecnología       │  ← LandingFooter
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 `/login` y `/register` (public)

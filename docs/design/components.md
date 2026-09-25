@@ -41,11 +41,15 @@ Los componentes usan **solo tokens semánticos** — prohibido color `hex` suelt
 - **Tabs**, **Skeleton**, **Toast**, **Pagination**
 - **Command** (search input si se usa combobox por autor/categoría)
 
-### 3.2 Estructurales (`components/layout`)
-- **Navbar** — logo FaCyT, enlaces (Feed, Perfil, Admin si aplica), `ThemeToggle`, menú de usuario.
-- **Sidebar** (escritorio ≥ 1024px) — navegación secundaria; en móvil se sustituye por **BottomNav** (≤5 destinos).
+### 3.2 Estructurales (`components/layout` y `components/landing`)
+- **LandingHeader** (`components/landing`) — cabecera pública exclusiva de `(landing)`, ultraligera con Logo FaCyT, enlace a login, `ThemeToggle` y botón "Omitir introducción".
+- **LandingFooter** (`components/landing`) — pie de página público minimalista para la bienvenida.
+- **LandingHero** / **ParallaxSection** (`components/landing`) — secciones del scroll parallax vertical con 5 capas de profundidad.
+- **Navbar** (`components/layout`) — barra superior del shell autenticado `(main)` (logo FaCyT, enlaces Feed, Perfil, Admin, `ThemeToggle`, menú de usuario).
+- **Sidebar** (`components/layout`, escritorio ≥ 1024px) — navegación secundaria autenticada; en móvil se sustituye por **BottomNav** (≤5 destinos).
+- **BottomNav** (`components/layout`, móvil < 768px) — barra de navegación inferior fija para la app autenticada `(main)`.
 - **ThemeToggle** — alterna `.dark`, renderiza icono sol/luna, aria-label, persistente con `next-themes`.
-- **Footer** — institucional (facultad, año, enlace repositorio).
+- **Footer** (`components/layout`) — institucional autenticado (facultad, año, enlace repositorio).
 
 ### 3.3 De dominio (`components/feed`, `components/forms`)
 - **PostCard** — componentes de la home: título (serif), autor/rol, categoría, badge de visibilidad, fecha, extracto del contenido; acciones si es autor/admin.

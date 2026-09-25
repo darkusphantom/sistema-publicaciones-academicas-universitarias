@@ -36,9 +36,13 @@ Regla: **ningún estado se comunica solo con color** (WCAG 1.4.1).
 - Validación en vivo solo tras abandonar el campo; nunca bloquear el submit sin explicar.
 - Inputs accesibles por nombre: "Buscar publicaciones", "Contraseña", etc.
 
-## 5. Movimiento y parpadeo
+## 5. Movimiento, Parallax y Animaciones
 
-- `prefers-reduced-motion: reduce` → desactivar todas las animaciones/transiciones.
+- **`prefers-reduced-motion: reduce`**: desactiva todas las animaciones, transiciones y efectos de parallax en scroll. Los elementos de la pantalla de bienvenida se renderizan estáticos en posición natural.
+- **Parallax Accesible (Capas de Fondo):**
+  - Los elementos con movimiento parallax (desfase de scroll) deben ser **únicamente capas decorativas de fondo** (números `01/02/03`, reglas horizontales, marcas de agua).
+  - Toda capa parallax decorativa DEBE llevar `aria-hidden="true"` para evitar que los lectores de pantalla anuncien elementos duplicados o fuera de contexto durante el desplazamiento.
+  - El texto legible (titulares, cuerpo, captions) y los controles interactivos (botones CTAs, enlaces, toggles) NUNCA deben sufrir distorsión, movimiento excesivo ni alteraciones de opacidad que impidan su lectura.
 - Ningún parpadeo > 3 destellos/segundo (WCAG 2.3.1).
 - Transiciones de tema (claro/oscuro): instantáneas o con `transition` corta y respetando reduced-motion (evitar flash de fondo en el toggle → aplicar clase `.dark` en `<html>` antes de pintar para no parpadear blanco).
 
