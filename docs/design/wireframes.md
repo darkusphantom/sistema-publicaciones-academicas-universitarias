@@ -23,23 +23,27 @@ Reglas de acceso (a implementar como guardas en la fase de backend; simuladas en
 ## 2. Esquemas por pantalla (ASCII, mobile-first; escritorio = 2–3 columnas)
 
 ### 2.1 `/` Bienvenida (public)
+
+Introducción **parallax vertical** para primeros ingresos (skip en recurrentes). Ver spec completa en [`welcome.md`](welcome.md) — estructura, copy, comportamiento flag `localStorage['facy:onboarding']`, wireframe, a11y y tokens.
 ```
-┌─────────────────────────────────────┐
-│ [FaCyT logo]                    🌙 │  ← Navbar pública
-├─────────────────────────────────────┤
-│  Facultad Experimental de          │
-│  Ciencias y Tecnología              │  ← Hero editorial
-│  ─────────────────────────────      │
-│  Noticias, académico y vida        │
-│  universitaria en un solo lugar.   │
-│  [ Iniciar sesión ]  [ Registrarse ]│
-├─────────────────────────────────────┤
-│  Sobre la facultad · Cifras ·      │
-│  Departamentos y laboratorios      │  ← 3 bloques institucionales
-│ ┌─────┐ ┌─────┐ ┌─────┐           │
-│ │ 01  │ │ 02  │ │ 03  │           │
-│ └─────┘ └─────┘ └─────┘           │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│ [FaCyT logo]            [🌙][Omitir ↦]      │  ← solo primer ingreso; foco: Skip
+├─────────────────────────────────────────────┤
+│   FaCyT                                     │  ← h1 serif (display) — ancla
+│   Facultad Experimental de Ciencias         │
+│   y Tecnología                              │
+│  ───────────────────────────  ← fina, se separa
+│   La gaceta digital de la facultad:         │
+│   noticias, avisos y vida universitaria.    │
+│   [ Iniciar sesión ]  [ Registrar ]         │
+│   01 Noticias y avisos · 02 Académico       │
+│   03 Vida universitaria                     │  ← capa parallax 2
+│   Para profesores, estudiantes y            │
+│   administración. Estudiante · Profesor ·   │  ← capa parallax 3
+│   Admin                                     │
+│   [ Empezar ]  [ Ya tengo cuenta ]          │  ← CTA único (acento)
+│  Marca de agua: Red FaCyT                   │
+└─────────────────────────────────────────────┘
 ```
 
 ### 2.2 `/login` y `/register` (public)

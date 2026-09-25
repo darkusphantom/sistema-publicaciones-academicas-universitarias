@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "@/app/(auth)/login/page";
 import RegisterPage from "@/app/(auth)/register/page";
 import LandingPage from "@/app/(landing)/page";
@@ -8,8 +8,31 @@ import FeedPage from "@/app/(main)/feed/page";
 import ProfilePage from "@/app/(main)/profile/[username]/page";
 
 /**
- * Smoke tests that render every route placeholder of the scaffold.
- * These guarantee the App Router skeleton mounts without errors.
+ * The welcome screen redirects recurrent visitors with the App Router client
+ * navigation, which is not available outside the router runtime.
+ */
+const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace }),
+}));
+
+/**
+ * `next/font` is resolved by the Next.js compiler, which does not run under
+ * Vitest: the stub below keeps the root layout importable.
+ */
+vi.mock("next/font/google", () => ({
+  Source_Serif_4: () => ({ variable: "--font-facyt-serif", className: "" }),
+}));
+
+beforeEach(() => {
+  replace.mockClear();
+  window.localStorage.clear();
+});
+
+/**
+ * Smoke tests that render every route of the scaffold.
+ * These guarantee the App Router mounts without errors.
  */
 describe("route smoke tests", () => {
   it("renders the root layout with its children", () => {
@@ -26,7 +49,7 @@ describe("route smoke tests", () => {
     render(<LandingPage />);
 
     expect(
-      screen.getByRole("heading", { name: "Landing page" }),
+      screen.getByRole("heading", { level: 1, name: "FaCyT" }),
     ).toBeInTheDocument();
   });
 
