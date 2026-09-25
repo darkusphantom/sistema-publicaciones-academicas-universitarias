@@ -1,0 +1,6 @@
+# Red FaCyT — pre-commit quality gate.
+# Runs ESLint and the test suite with coverage (>= 80% threshold) before every commit.
+# See docs/husky.md for details on how to extend or bypass this hook.
+
+pnpm lint
+pnpm test:coverage
