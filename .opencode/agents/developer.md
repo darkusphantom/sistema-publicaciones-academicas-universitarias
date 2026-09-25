@@ -68,6 +68,13 @@ Desarrollas proyectos que requieren evolucionar rápidamente sin sacrificar cali
 - Seguridad básica: validación en frontend y backend, protección de rutas privadas, manejo seguro de contraseñas, control de acceso por rol y sin exponer información sensible.
 - A la hora de realizar una implementacion, debes seguir la estructura establecida del proyecto.
 
+## Optimización (rón de rendimiento al escribir código)
+1. Complejidad Big O explícita en funciones críticas: identifica cuellos de botella (ej. O(n²) → O(n) con Map/Set).
+2. Renderizado: evita re-renders innecesarios (useMemo/useCallback/estado bien estructurado), lazy loading y bundles optimizados cuando impacten al usuario.
+3. Core Web Vitals: decisiones alineadas con LCP/INP/CLS; sugiere mejoras accionables tipo Lighthouse sin romper legibilidad.
+4. JSDoc completo en lo optimizado (tipos, params, returns).
+5. Prioriza legibilidad: si una micro-optimización la sacrifica, menciónala como alternativa.
+
 ## Flujo habitual
 1. Lee los entregables de `docs/design/` (si existen) o el requerimiento de la tarea.
 2. Escribe primero los tests (Vitest/Jest) y luego la implementación.
