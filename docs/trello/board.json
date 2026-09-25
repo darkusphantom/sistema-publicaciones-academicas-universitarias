@@ -1,0 +1,25 @@
+{
+  "boardName": "Red FaCyT - Kanban",
+  "boardId": "6ab54a2e9fba384e2fa66468",
+  "url": "https://trello.com/b/29c1YL1V/red-facyt-kanban",
+  "lists": {
+    "Pendiente": "6ab54a2fe207395721a52b54",
+    "En análisis": "6ab54a2f8a4a0dd3aa86fdc3",
+    "En desarrollo": "6ab54a3002dc826a7839556b",
+    "En prueba": "6ab54a30148fb4557e08235b",
+    "En revisión": "6ab54a31dd2c34a482b13ee6",
+    "Terminado": "6ab54a31679c2005a693b7de"
+  },
+  "labels": {
+    "Alta": "6ab54a3294e3a4a1e4d7d9fc",
+    "Media": "6ab54a329270f023507eda69",
+    "Baja": "6ab54a33cd1c4d29fb3ada38",
+    "feature": "6ab54a3350afefa62349f540",
+    "fix": "6ab54a347309bdab0a4c4543",
+    "refactor": "6ab54a34458b0783740a7c3b",
+    "docs": "6ab54a357691de5268a81473",
+    "test": "6ab54a35a1776444b5a7549a",
+    "chore": "6ab54a35517349093dc5fa24",
+    "perf": "6ab54a362c9acca749adb3d8"
+  }
+}
