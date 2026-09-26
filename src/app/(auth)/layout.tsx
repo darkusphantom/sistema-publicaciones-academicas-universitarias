@@ -1,9 +1,12 @@
 import { ReactNode } from "react";
-import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Footer } from "@/components/layout/footer";
-import { buttonStyles } from "@/components/ui/button";
 
+/**
+ * Layout for the authentication pages (/login, /register).
+ * Provides a centered card container, a header with a theme toggle, 
+ * and a footer. It isolates the auth UI from the main application shell.
+ */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-bg text-text">
@@ -17,18 +20,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="rounded-xl border border-border bg-surface p-6 shadow-sm sm:p-8">
             {children}
           </div>
-          
-          <div className="mt-6 flex justify-center">
-            <Link 
-              href="/" 
-              className={buttonStyles({ variant: "ghost", size: "sm" })}
-            >
-              Volver a la bienvenida
-            </Link>
-          </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );

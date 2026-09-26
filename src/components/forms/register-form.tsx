@@ -17,6 +17,11 @@ import { StaticAuthGateway } from "@/lib/auth/auth-gateway.static";
 
 const gateway = new StaticAuthGateway();
 
+/**
+ * RegisterForm component.
+ * Provides the user interface for registering a new user account.
+ * It handles validation of fields, confirmation of password, and communication with the AuthGateway.
+ */
 export function RegisterForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);

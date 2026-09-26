@@ -1,5 +1,8 @@
-
-
+/**
+ * Validates a username input.
+ * @param value The username string to validate.
+ * @returns An error message string if invalid, or null if valid.
+ */
 export function validateUsername(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return "Escribe tu usuario.";
@@ -7,6 +10,12 @@ export function validateUsername(value: string): string | null {
   return null;
 }
 
+/**
+ * Validates a person's name (given name or family name).
+ * @param value The name string to validate.
+ * @param isSurname Whether this is a family name (changes the error messages).
+ * @returns An error message string if invalid, or null if valid.
+ */
 export function validateName(value: string, isSurname: boolean = false): string | null {
   const trimmed = value.trim();
   const label = isSurname ? "apellido" : "nombre";
@@ -17,6 +26,11 @@ export function validateName(value: string, isSurname: boolean = false): string 
   return null;
 }
 
+/**
+ * Validates an email address.
+ * @param value The email string to validate.
+ * @returns An error message string if invalid, or null if valid.
+ */
 export function validateEmail(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return "Escribe tu correo.";
@@ -29,6 +43,12 @@ export function validateEmail(value: string): string | null {
   return null;
 }
 
+/**
+ * Validates a password input, with different rules for login vs registration.
+ * @param value The password string to validate.
+ * @param isLogin Whether this validation is for login (skips complexity checks).
+ * @returns An error message string if invalid, or null if valid.
+ */
 export function validatePassword(value: string, isLogin: boolean = false): string | null {
   if (!value) return "Escribe tu contraseña.";
   if (isLogin) {
@@ -40,12 +60,23 @@ export function validatePassword(value: string, isLogin: boolean = false): strin
   return null;
 }
 
+/**
+ * Validates that a password confirmation matches the original password.
+ * @param password The original password string.
+ * @param confirm The confirmation password string.
+ * @returns An error message string if invalid, or null if valid.
+ */
 export function validateConfirmPassword(password: string, confirm: string): string | null {
   if (!confirm) return "Escribe la contraseña otra vez.";
   if (password !== confirm) return "Las contraseñas no coinciden.";
   return null;
 }
 
+/**
+ * Validates the entire login form data.
+ * @param data The FormData object containing login fields.
+ * @returns An object containing a success boolean and a record of field errors.
+ */
 export function validateLogin(data: FormData): { success: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
   
@@ -64,6 +95,11 @@ export function validateLogin(data: FormData): { success: boolean; errors: Recor
   };
 }
 
+/**
+ * Validates the entire registration form data.
+ * @param data The FormData object containing registration fields.
+ * @returns An object containing a success boolean and a record of field errors.
+ */
 export function validateRegister(data: FormData): { success: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
   

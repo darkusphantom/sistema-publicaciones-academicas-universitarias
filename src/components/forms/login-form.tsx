@@ -11,6 +11,11 @@ import { StaticAuthGateway } from "@/lib/auth/auth-gateway.static";
 
 const gateway = new StaticAuthGateway();
 
+/**
+ * LoginForm component.
+ * Provides the user interface for authenticating an existing user.
+ * It manages validation, displays errors, and communicates with the AuthGateway.
+ */
 export function LoginForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);

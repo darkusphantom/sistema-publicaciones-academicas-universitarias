@@ -19,7 +19,7 @@ export type FooterProps = {
  */
 export function Footer({ year = new Date().getFullYear() }: FooterProps) {
   return (
-    <footer className="border-t border-border">
+    <footer className="border-t border-border text-center">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-6 py-8 sm:px-8">
         <p className="font-display text-h3 text-primary">Red FaCyT</p>
         <p className="text-sm text-text-muted">

@@ -4,6 +4,11 @@ import { mockUsers } from "@/data/users";
 
 const SESSION_KEY = "facy:session";
 
+/**
+ * A static, in-memory implementation of the AuthGateway.
+ * Used during the frontend static phase before the real backend is connected.
+ * It uses `localStorage` to simulate session persistence in the browser.
+ */
 export class StaticAuthGateway implements AuthGateway {
   async signIn(credentials: FormData): Promise<AuthResult> {
     const username = credentials.get("username")?.toString() || "";
