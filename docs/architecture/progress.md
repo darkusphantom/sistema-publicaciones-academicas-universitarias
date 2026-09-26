@@ -18,6 +18,7 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 | Esqueleto de carpetas | `src/components/{ui,layout,feed,forms,shared}`, `src/data`, `src/test`, `src/lib/repositories`, rutas `(main)/posts/{new,[id]}` + `admin` | 2026-09-25 |
 | Skill de contexto del proyecto | `.opencode/skills/project-context/SKILL.md` (lectura obligatoria + documentación post-implementación) | 2026-09-25 |
 | Pantalla de bienvenida `/` (spec `docs/design/welcome.md`) | Parallax vertical CSS-first + guard de onboarding (`localStorage facy:onboarding` → `/login`), copy final aprobado, tokens claro/oscuro, `theme.ts` store externo, `button.tsx`/iconos propios, `theme-toggle`, `footer`, `(landing)` top-bar. Spec preexistente en `wireframes.md` §2.1 | 2026-09-25 |
+| Vista de autenticación `/login` y `/register` | Formularios accesibles (`Field`, `FormAlert`), validación pura (`validateLogin`, `validateRegister`), repositorio estático en-memoria (`StaticAuthGateway`), navegación protegida (`AuthGuard`) redirigiendo a `/feed`. | 2026-09-26 |
 
 ## En progreso
 
@@ -47,10 +48,11 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 | Suite | Resultado | Cobertura |
 | --- | --- | --- |
 | Smoke de rutas + `format` | 12/12 pasan | 100% (stmts/branches/funcs/lines) |
-| Suite completa (15 archivos, 125 tests) | 125/125 pasan | 100% stmts/branches/funcs/lines (incluye bienvenida, onboarding, theme, button, parallax, footer, landing) |
+| Suite completa (22 archivos, 151 tests) | 151/151 pasan | ~90% líneas (cobertura global; 100% en forms, validation, layout de auth) |
 
 ## Registro de cambios (últimos)
 
+- **2026-09-26 — Vista de Autenticación `/login` y `/register`**: Implementados los formularios de inicio de sesión y registro siguiendo `docs/design/auth.md`. Desarrollo en TDD: funciones de validación puras, componentes UI accesibles (`Field` y `FormAlert` con ARIA-live alert y labels vinculados), `StaticAuthGateway` imitando el backend con promesas, y componente `AuthGuard` para redirigir si ya hay sesión. 151 tests pasando al 100%, lint sin warnings y cobertura superando umbrales configurados.
 - **2026-09-25 — Pantalla de Bienvenida `/` basada en Slider Mobile-First (Rediseño)**: se actualizó la especificación `docs/design/welcome.md` y se implementó la nueva pantalla de bienvenida basada en un deslizante interactivo (`LandingSlider`, `SlideCard`, `SlideIndicators`, `LandingHeader`, `LandingFooter`). Incluye soporte de gestos táctiles (swipe), navegación por teclado (`←`/`→`), temas neutros oscuros (charcoal `#0B0F19` base con acentos ámbare e institucionales), accesibilidad WCAG 2.2 AA (ARIA carousel pattern, 44px touch targets) y guard de onboarding (`facy:onboarding`). Se agregaron 132 pruebas unitarias pasando al 100%, lint sin errores y compilación estática de Next.js (`pnpm build`) totalmente exitosa.
 - **2026-09-25 — Integración visual y arquitectónica de bienvenida `/`**: se implementó el layout independiente `src/app/(landing)/layout.tsx` sin heredar el shell principal, y se integraron las 4 ilustraciones vectoriales generadas (`facyt_hero_gazette.png`, y pilares). Se configuró el Hero en layout grid de 2 columnas. Lint OK, cobertura mantenida al 100% (tests de parallax actualizados para ignorar assets decorativos con false).
 - **2026-09-25 — Pantalla de bienvenida `/` implementada**: spec de diseño persistida en `docs/design/welcome.md` (+ `wireframes.md` §2.1); developer implementó parallax vertical CSS-first (scroll-driven, respeta `prefers-reduced-motion`), guard de onboarding `facy:onboarding` (primer ingreso vs. recurrente → `/login`), copy aprobado, tokens claro/oscuro, `theme.ts` (store externo, sin `next-themes`), primitivos propios (`button`, iconos). Lint OK, 125 tests, cobertura 100%, build `/` estático. Desvío: carpeta nueva `src/components/landing/` por registrar en arquitectura. Se usaron primitivos propios en lugar de shadcn/ui + next-themes (no instalados), decisión documentada en Trello.

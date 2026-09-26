@@ -53,17 +53,17 @@ describe("route smoke tests", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the login page", () => {
+  it("renders the login page", async () => {
     render(<LoginPage />);
 
-    expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Iniciar sesión" })).toBeInTheDocument();
   });
 
-  it("renders the register page", () => {
+  it("renders the register page", async () => {
     render(<RegisterPage />);
 
     expect(
-      screen.getByRole("heading", { name: "Register" }),
+      await screen.findByRole("heading", { name: "Crear cuenta" }),
     ).toBeInTheDocument();
   });
 
