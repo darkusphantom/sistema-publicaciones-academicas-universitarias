@@ -135,7 +135,7 @@ El estado real de implementación **no vive en este archivo**. Consulta [`progre
 ## 5. Theming (claro/oscuro)
 
 - Tokens como CSS variables en `globals.css`, con valores light en `:root` y dark bajo `.dark` (ver tabla en `docs/design/brief.md`).
-- `--primary` (`#1E3A5F` light / `#7FA8E8` dark) para masthead/marca; `--accent` (`#2563EB` / `#60A5FA`) como único color accionable (CTAs, links, foco).
+- `--primary` (`#1E3A5F` light / `#7FA8E8` dark) para masthead/marca; `--accent` (`#D97706` / `#F59E0B`, ámbar) como único color accionable de superficies (CTA, estado activo) y del anillo de foco; `--accent-teal` (`#0369A1` / `#38BDF8`) para enlaces; `--accent-foreground` (`#0B1220` en ambos temas) para el texto sobre `--accent`.
 - `next-themes` con `ThemeProvider` en el layout raíz y `ThemeToggle` en la navbar.
 - Aplicar `.dark` en `<html>` antes del primer pinto para evitar flash de fondo (ver `docs/design/accessibility.md` §5).
 - Componentes usan **solo tokens semánticos**; prohibido `hex` suelto.

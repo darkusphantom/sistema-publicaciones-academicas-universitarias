@@ -39,9 +39,9 @@ va centrado con `max-width` 400px y los campos en una sola columna.
 │   │ [                  ]  │   │
 │   │ Contraseña            │   │
 │   │ [                  ]  │   │
-│   │ [ Iniciar sesión ]    │   │  ← accent, ancho completo
+│   │ [ Iniciar sesión ]    │   │  ← accent (ámbar), ancho completo
 │   │ ¿No tienes cuenta?    │   │
-│   │ Regístrate            │   │  ← link accent
+│   │ Regístrate            │   │  ← link accent-teal (cian)
 │   └───────────────────────┘   │
 │                               │
 │   Volver a la bienvenida      │  ← link ghost, → /

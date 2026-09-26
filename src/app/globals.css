@@ -6,10 +6,18 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Semantic colour tokens — the only place where raw colour values are allowed.
-   Light values come from `docs/design/brief.md` §3; `.dark` mirrors them.
-   `--accent-foreground` is the only token added on top of the spec palette: the
-   accent inverts in the dark theme, so its text colour must flip as well to keep
-   WCAG AA contrast on the primary CTA. */
+   Values follow the palette in `docs/design/brief.md` §3, where `--primary` is
+   the institutional blue (headings, badges) and `--accent` is the amber used for
+   primary CTAs and active states. Do not treat `--accent` as the brand colour.
+
+   Two deviations from the spec palette, both for WCAG AA and both documented in
+   `docs/design/auth.md` §8:
+   - `--accent-foreground` is added on top of the spec. Amber is a mid-tone in
+     both themes, so its text stays dark in both: `#FFFFFF` on the light amber
+     `#D97706` is only 3.19:1 and would fail.
+   - `--accent-teal` is the light value darkened from `#0284C7` to `#0369A1`
+     (4.10:1 -> 5.93:1 on white) so that it can carry body-size link text.
+ */
 :root {
   --bg: #f5f7fa;
   --surface: #ffffff;
@@ -17,8 +25,9 @@
   --text: #172033;
   --text-muted: #51607a;
   --primary: #1e3a5f;
-  --accent: #2563eb;
-  --accent-foreground: #ffffff;
+  --accent: #d97706;
+  --accent-foreground: #0b1220;
+  --accent-teal: #0369a1;
   --border: #d8deea;
   --danger: #b91c1c;
   --success: #15803d;
@@ -32,8 +41,9 @@
   --text: #e6eaf2;
   --text-muted: #93a1bc;
   --primary: #7fa8e8;
-  --accent: #60a5fa;
+  --accent: #f59e0b;
   --accent-foreground: #0b1220;
+  --accent-teal: #38bdf8;
   --border: #2b3a57;
   --danger: #f87171;
   --success: #4ade80;
@@ -51,6 +61,7 @@
   --color-primary: var(--primary);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-teal: var(--accent-teal);
   --color-border: var(--border);
   --color-danger: var(--danger);
   --color-success: var(--success);

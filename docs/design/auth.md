@@ -23,8 +23,9 @@ identidad institucional entra por la marca y la tipografía, no por decoración.
   `brief.md` §5): el bloque se centra en la página, el contenido se alinea a la
   izquierda.
 - **Un solo acento por pantalla.** El botón de envío es la única superficie
-  `--accent` (regla de `components.md` §5). Los enlaces son texto `--accent` sin
-  subrayado permanente, subrayado en `hover` y `focus-visible`.
+  `--accent`, que es el ámbar de acción (regla de `components.md` §5). Los
+  enlaces son texto `--accent-teal` sin subrayado permanente, subrayado en
+  `hover` y `focus-visible`.
 - **Jerarquía:** palabra de marca (serif, `--primary`) → H1 de la pantalla
   (serif, `--text`) → labels (sans, 16px) → ayuda y errores (sans, 14px,
   `--text-muted` / `--danger`).
@@ -177,38 +178,58 @@ pantallas:
 
 ### 8.1 Tokens: `globals.css` es la fuente de verdad
 
-Estas pantallas **no introducen ningún token nuevo ni modifican la paleta**. Se
-usan exclusivamente las variables que ya están definidas en
-`src/app/globals.css`, que es la fuente de verdad del proyecto. Nada de hex
-sueltos en los componentes, y nada que haya que propagar a otras vistas: los
-tokens ya son globales.
+Estas pantallas **no introducen tokens nuevos para el formulario**. Todo lo que
+necesitan ya está definido en `src/app/globals.css`: nada de hex sueltos en los
+componentes y nada que haya que propagar a otras vistas, porque los tokens ya
+son globales.
 
-> [!WARNING]
-> `docs/design/brief.md` §3 quedó desalineado con `globals.css` tras el
-> rediseño de la pantalla de bienvenida (commit `4c4eec5`): el brief documenta
-> una paleta ámbar/charcoal con token `--accent-teal`, mientras que el código
-> renderiza la paleta azul institucional. **Prevalece `globals.css`**, y estas
-> pantallas no tocan la paleta. Los valores de la tabla siguiente están leídos
-> del archivo, no del brief.
+La jerarquía de color, tal como está definida en `docs/design/brief.md` §3 y
+respetada por `globals.css`:
+
+| Rol            | Token         | Significado                                        |
+| -------------- | ------------- | -------------------------------------------------- |
+| Identidad      | `--primary`     | Azul institucional. Encabezados, insignias, marca     |
+| **Acción**     | `--accent`      | **Ámbar. CTA principal y estados activos**            |
+| Enlaces        | `--accent-teal` | Cian. Enlaces y texto resaltado                      |
+| Texto          | `--text` / `--text-muted` | Contenido y contenido secundario         |
+| Error          | `--danger`      | Mensajes de validación                               |
+
+> [!IMPORTANT]
+> **El ámbar no es el color primario.** Lo primario es `--primary` (azul
+> institucional). El ámbar es el acento de acción, y por eso vive en el botón de
+> envío, nunca en el fondo ni en el marco de la tarjeta. Confundir ambos es lo
+> que dejó `--accent` con un valor azul en `globals.css` mientras la pantalla de
+> bienvenida lo pintaba de ámbar a mano.
 
 ### 8.2 Contraste verificado
 
 Ratios calculados sobre los valores reales de `globals.css`.
 
-| Elemento                      | Token                                                | Ratio   | Cumple         |
-| ----------------------------- | ---------------------------------------------------- | ------- | -------------- |
-| H1 y labels sobre la tarjeta  | `--text` #172033 sobre `--surface` #FFFFFF           | 16.3:1  | AAA            |
-| Subtítulo, ayuda, placeholder | `--text-muted` #51607A sobre #FFFFFF                 | 6.36:1  | AA             |
-| Texto del botón de envío      | `--accent-foreground` #FFFFFF sobre `--accent` #2563EB | 5.17:1  | AA             |
-| Enlaces                       | `--accent` #2563EB sobre `--surface` #FFFFFF          | 5.17:1  | AA             |
-| Mensajes de error             | `--danger` #B91C1C sobre #FFFFFF                     | 6.47:1  | AA             |
-| Anillo de foco                | `--accent` #2563EB sobre `--surface` #FFFFFF          | 5.17:1  | AA (SC 2.4.11) |
-| **Borde de campo**            | `--text-muted` #51607A sobre `--surface` #FFFFFF      | 6.36:1  | AA (SC 1.4.11) |
-| Borde de campo, modo oscuro   | `--text-muted` #93A1BC sobre `--surface` #131C31     | 6.52:1  | AA (SC 1.4.11) |
-| Borde de tarjeta y divisor    | `--border` #D8DEEA sobre `--surface` #FFFFFF          | 1.35:1  | Decorativo, exento |
+| Elemento                      | Token                                                     | Ratio   | Cumple         |
+| ----------------------------- | --------------------------------------------------------- | ------- | -------------- |
+| H1 y labels sobre la tarjeta  | `--text` #172033 sobre `--surface` #FFFFFF                | 16.27:1 | AAA            |
+| Subtítulo, ayuda, placeholder | `--text-muted` #51607A sobre #FFFFFF                      | 6.36:1  | AA             |
+| Texto del botón de envío      | `--accent-foreground` #0B1220 sobre `--accent` #D97706     | 5.88:1  | AA             |
+| Enlaces                       | `--accent-teal` #0369A1 sobre `--surface` #FFFFFF         | 5.93:1  | AA             |
+| Mensajes de error             | `--danger` #B91C1C sobre `#FFFFFF`                         | 6.47:1  | AA             |
+| Anillo de foco                | `--accent` #D97706 sobre `--surface` #FFFFFF               | 3.19:1  | AA (SC 2.4.11) |
+| **Borde de campo**            | `--text-muted` #51607A sobre `--surface` #FFFFFF            | 6.36:1  | AA (SC 1.4.11) |
+| Borde de campo, modo oscuro   | `--text-muted` #93A1BC sobre `--surface` #131C31            | 6.51:1  | AA (SC 1.4.11) |
+| Borde de tarjeta y divisor    | `--border` #D8DEEA sobre `--surface` #FFFFFF                | 1.35:1  | Decorativo, exento |
 
-Modo oscuro: `--text` #E6EAF2 sobre `--surface` #131C31 da 13.9:1, y
-`--accent-foreground` #0B1220 sobre `--accent` #60A5FA da 6.55:1. Ambos AA.
+Dos ratios que conviene no dar por buenos sin comprobarlos:
+
+- **El texto del botón es oscuro, nunca blanco.** El ámbar es un tono medio en
+  ambos temas, así que `#FFFFFF` sobre `--accent` #D97706 da **3.19:1** y
+  fallaría. De ahí que `--accent-foreground` sea `#0B1220` en claro y en oscuro.
+- **El anillo de foco queda justo.** 3.19:1 cumple el 3:1 de SC 2.4.11, pero sin
+  margen. Por eso el anillo no se apoya solo en `--accent`: el botón y los
+  enlaces además cambian de tono al recibir foco, de modo que el estado es
+  perceptible más allá del color del contorno.
+
+Modo oscuro: `--text` #E6EAF2 sobre `--surface` #131C31 da 14.07:1,
+`--accent-foreground` #0B1220 sobre `--accent` #F59E0B da 8.72:1 y
+`--accent-teal` #38BDF8 sobre #131C31 da 7.92:1. Todos AA.
 
 ### 8.3 Por qué el borde de campo no usa `--border`
 
@@ -225,13 +246,28 @@ sino reutilizar `--text-muted`, que en ambos temas cumple con holgadura:
 - `--border` se reserva para el marco de la tarjeta y el divisor, que sí son
   decorativos y están exentos.
 
-### 8.4 Sin token nuevo
+### 8.4 Los únicos dos tokens añadidos, y por qué
 
-No se crea `--border-strong` ni ningún otro token. La paleta está cerrada y ya
-es global; reutilizar `--text-muted` resuelve el contraste sin tocar
-`globals.css` ni obligar a propagar nada a otras vistas.
+`globals.css` ya traía `--accent-foreground`; en este trabajo se ajustan sus
+valores y se añade `--accent-teal`. Ninguno de los dos es una invención para
+este par de pantallas: los dos están en la paleta de `brief.md` §3 y en
+`components.md` §1.
+
+- `--accent-foreground` #0B1220 en ambos temas, porque el ámbar es tono medio en
+  ambos y el blanco no llega a 4.5:1 (§8.2).
+- `--accent-teal` #0369A1 / #38BDF8 para los enlaces. El valor claro del brief es
+  `#0284C7`, que da 4.10:1 sobre blanco; se oscurece a `#0369A1` (5.93:1)
+  conservando el tono. El oscuro del brief se usa tal cual.
+
+**No** se crea `--border-strong` ni ningún token para el borde de los campos: eso
+se resuelve reutilizando `--text-muted` (§8.3).
 
 ## 9. Guía de archivos para el developer
+
+> [!NOTE]
+> `src/app/globals.css` **ya está corregido**: `--accent` es ámbar,
+> `--accent-foreground` es oscuro en ambos temas y `--accent-teal` existe. El
+> developer no debe volver a tocarlo; solo consumir los tokens.
 
 | Archivo                                                | Acción                 | Responsabilidad                                                                                     |
 | ------------------------------------------------------ | ---------------------- | --------------------------------------------------------------------------------------------------- |
@@ -248,7 +284,7 @@ es global; reutilizar `--text-muted` resuelve el contraste sin tocar
 | `src/lib/auth/auth-gateway.ts`                          | crear                  | Interfaz: `signIn`, `signUp`, `getSession`, `signOut`                                                 |
 | `src/lib/auth/auth-gateway.static.ts`                   | crear                  | Adaptador de fase estática sobre `src/data/users.ts`; persiste la sesión en `localStorage`            |
 | `src/data/users.ts`, `src/data/session.ts`               | crear                  | Mock con la forma del modelo futuro                                                                  |
-| `src/app/globals.css`                                    | **no tocar**           | La paleta ya está definida y es global; estas pantallas solo la consumen                                |
+| `src/app/globals.css`                                    | ya corregido          | `--accent` ámbar, `--accent-foreground` oscuro en ambos temas y `--accent-teal` añadido. **No volver a tocarlo** (§8.4) |
 | `src/__tests__/routes.smoke.test.tsx`                    | modificar              | Hoy afirma que `/login` y `/register` son placeholders                                                |
 | `docs/design/wireframes.md` §2.1 y §2.2                  | ya aplicado            | Punteros a `wireframes_welcome.md` y `wireframes_auth.md`                                             |
 | `docs/architecture/frontend-structure.md` L117           | pendiente de OK        | La tabla de rutas lista el rol en el registro (§10.2)                                                  |
@@ -286,9 +322,10 @@ funciones de administración o moderación (`Proyecto1_Junio2026.md` §a), y un
 selector abierto en el registro público permite autoasignarse permisos. Es además
 menos superficie de UI y de validación.
 
-**Consecuencia:** cambia el `wireframes.md` §2.2 anterior, que preveía el
-selector, y hay que corregir la tabla de rutas de `frontend-structure.md` L117,
-que hoy lista "rol Estudiante/Profesor" en `/register`.
+**Consecuencia:** la tabla de rutas de `frontend-structure.md` L117 ya no lista
+"rol Estudiante/Profesor" en `/register`; se corrigió a nombre, apellido, correo
+y contraseña. El `wireframes.md` §2.2 anterior, que preveía el selector, está
+reemplazado por `wireframes_auth.md`.
 
 ### 10.3 Sin "Recordarme"
 
@@ -328,6 +365,25 @@ es deliberadamente genérico para que no se lea como regla.
 
 Al ser enlaces que desmontan el componente, lo escrito no sobrevive. Se acepta:
 evita estado global y pasar datos por la URL, que es donde sería peligroso.
+
+### 10.10 `--accent` vuelve a ser ámbar (colisión de nombres)
+
+`globals.css` tenía `--accent: #2563EB`, un azul, mientras `brief.md` §3 define
+`--accent` como el **ámbar** de los CTA y la pantalla de bienvenida lo pintaba a
+mano con `bg-amber-500`. El nombre del token y su valor no coinciden. Dos
+superficies pintadas a mano y un token con el nombre correcto y el valor
+equivocado: el resultado era que el botón de auth habría salido azul y la
+portada ámbar.
+
+Decisión: `--accent` vuelve a ser ámbar (`#D97706` / `#F59E0B`) y `--primary`
+recupera su papel real de azul institucional. Beneficio adicional: el anillo de
+foco global de `globals.css` pasa a ámbar y deja de discrepar del
+`focus-visible:ring-amber-500` que la portada sí usa.
+
+**Pendiente de otro commit:** la portada sigue pintando `amber-500` y `slate-*` a
+mano en lugar de usar los tokens. El resultado visual es equivalente (la portada
+es siempre oscura y `amber-500` es exactamente el valor oscuro del token), pero
+es duplicación que conviene eliminar.
 
 ## 11. Seguridad
 
