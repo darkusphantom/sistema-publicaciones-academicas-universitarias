@@ -114,7 +114,7 @@ src/
 | --- | --- | --- | --- |
 | `/` | `(landing)` | público | Bienvenida — hero editorial institucional |
 | `/login` | `(auth)` | público | Iniciar sesión |
-| `/register` | `(auth)` | público | Registro (nombre, apellido, rol Estudiante/Profesor) |
+| `/register` | `(auth)` | público | Registro (nombre, apellido, correo, contraseña) — sin selector de rol; el rol se asigna en `/admin` |
 | `/feed` | `(main)` | autenticado | Dashboard — feed de publicaciones con filtros |
 | `/posts/new` | `(main)` | autenticado | Crear publicación |
 | `/posts/[id]` | `(main)` | autenticado | Detalle completo + edición (`/posts/[id]/edit`) |

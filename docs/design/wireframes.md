@@ -1,122 +1,164 @@
-# Wireframes y Navegación — Red FaCyT (Estrategia Mobile-First Slider)
+# Wireframes — Red FaCyT (Mapa de navegación y esquemas)
 
-Este documento detalla la estructura visual y de navegación para la vista de bienvenida `/` (`(landing)`), organizada en torno a un **deslizante (slider/carrusel) interactivo y responsivo**.
+Documento **maestro**: contiene el mapa de navegación, los esquemas de las
+pantallas autenticadas de `(main)` y las decisiones transversales. Los wireframes
+por área viven en archivos propios:
 
----
+| Área                          | Archivo                                    | Especificación detallada |
+| ----------------------------- | ------------------------------------------ | ----------------------- |
+| Bienvenida `/`                | [`wireframes_welcome.md`](wireframes_welcome.md) | [`welcome.md`](welcome.md)   |
+| Autenticación `/login`, `/register` | [`wireframes_auth.md`](wireframes_auth.md)   | [`auth.md`](auth.md)         |
+| Feed, posts, perfil, admin    | §3 de este documento                       | —                       |
 
-## 1. Mapa de Navegación del Flujo de Bienvenida
+> [!NOTE]
+> Los wireframes de la bienvenida se movieron a `wireframes_welcome.md` y los de
+> autenticación a `wireframes_auth.md` cuando el documento empezó a crecer. El
+> esquema del deslizante (móvil y escritorio) reemplaza al del scroll parallax
+> vertical anterior.
 
-```
-                          ┌───────────────────────────┐
-                          │    PÁGINA DE BIENVENIDA   │
-                          │   / (landing/page.tsx)    │
-                          └─────────────┬─────────────┘
-                                        │
-           ┌────────────────────────────┼────────────────────────────┐
-           ▼                            ▼                            ▼
-┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐
-│  SLIDE 1: BIENVENIDA │ ──►│ SLIDE 2: COMUNICADOS │ ──►│ SLIDE 3: ACADÉMICO   │
-│ Gaceta Digital FaCyT │ ◄──│  Noticias y Avisos   │ ◄──│  Defensas y Tesis    │
-└──────────────────────┘    └──────────────────────┘    └──────────┬───────────┘
-                                                                   │
-                                                                   ▼
-┌──────────────────────┐                                ┌──────────────────────┐
-│       REGISTRO       │ ◄──────────────────────────────│   SLIDE 4: COMUNIDAD │
-│      (/register)     │    Botón "Empezar" / CTA       │  Únete a la Red + CTA│
-└──────────────────────┘                                └──────────┬───────────┘
-                                                                   │
-┌──────────────────────┐                                           │
-│    INICIO SESIÓN     │ ◄─────────────────────────────────────────┘
-│       (/login)       │    Botón "Ya tengo cuenta" / "Omitir"
-└──────────────────────┘
-```
-
----
-
-## 2. Wireframe Móvil (360px - 480px) — Vista Principal
-
-### 2.1 Estructura en Móvil (Mobile-First)
+## 1. Mapa de navegación
 
 ```
-┌───────────────────────────────────────────┐
-│ [FaCyT Logo]                 [🌙] [Omitir] │  ← Header Superior Fijo
-├───────────────────────────────────────────┤
-│                                           │
-│ ┌───────────────────────────────────────┐ │
-│ │ SLIDE 1 / 4                           │ │  ← Contenedor Deslizante (Swipeable)
-│ │                                       │ │
-│ │  [ILUSTRACIÓN HERO]                   │ │
-│ │                                       │ │
-│ │  Gaceta Digital FaCyT                 │ │  ← Titular H1 Serif
-│ │  Facultad Experimental de Ciencias    │ │
-│ │  y Tecnología                         │ │
-│ │                                       │ │
-│ │  Tu espacio oficial para noticias,    │ │  ← Subtítulo descriptivo
-│ │  eventos y publicaciones científicas. │ │
-│ └───────────────────────────────────────┘ │
-│                                           │
-│           [ ●  ○  ○  ○ ]                  │  ← Indicadores de Diapositiva (Pills)
-│                                           │
-├───────────────────────────────────────────┤
-│ [ Empezar (Registro) ]                    │  ← Botón Primario Ámbar/Acento (Sticky)
-│ [ Ya tengo cuenta (Login) ]               │  ← Enlace/Botón Secundario
-└───────────────────────────────────────────┘
+/                          (landing) Bienvenida   [público]
+├── /login                 (auth)  Autenticación [público]
+├── /register              (auth)  Registro      [público]
+│                               └── tras éxito → /feed
+├── /feed                  (main)  Dashboard/Feed   [autenticado]
+│   ├── /posts/new                 Crear publicación
+│   ├── /posts/[id]                Detalle completo
+│   │   └── (acción) → /posts/[id]/edit
+│   ├── /profile/[username]        Perfil + publicaciones del usuario
+│   └── /admin                     Gestión de roles/permisos (solo admin)
 ```
 
----
+Reglas de acceso (a implementar como guardas en la fase de backend; simuladas en
+estático):
 
-## 3. Wireframe Escritorio (1024px+) — Adaptación Responsiva
+- `(landing)` y `(auth)`: público.
+- `(main)`: requiere sesión; si no hay, redirige a `/login`.
+- `/admin`: solo rol `admin`; si no, redirige a `/feed`.
 
-En computadoras de escritorio, la vista se centra elegantemente sobre el fondo neutro oscuro (`#0B0F19`), mostrando una tarjeta amplia de 2 columnas con navegación por flechas.
+### 1.1 Guardas de las pantallas de autenticación
 
-### 3.1 Estructura en Escritorio
+Definido en [`auth.md`](auth.md):
+
+- `/` envía a `/login` a los visitantes recurrentes (flag `facy:onboarding`).
+- Con sesión activa, `/login` y `/register` redirigen a `/feed`, de modo que no
+  hay ciclos de redirección: `/login` nunca devuelve a `/`.
+- Tras autenticarse o registrarse, el destino es `/feed`.
+
+## 2. Pantallas públicas
+
+Las pantallas de `(landing)` y `(auth)` están especificadas en
+`wireframes_welcome.md` y `wireframes_auth.md` respectivamente.
+
+## 3. Pantallas autenticadas de `(main)`
+
+### 3.1 `/feed` Dashboard — vista principal
 
 ```
-┌───────────────────────────────────────────────────────────────────────────┐
-│  [FaCyT Logo Gaceta]                             [🌙 Tema] [Omitir ↦]     │
-├───────────────────────────────────────────────────────────────────────────┤
-│                                                                           │
-│            ┌─────────────────────────────────────────────────┐            │
-│            │ SLIDE ACTIVE (2 columnas)                       │            │
-│            │                                                 │            │
-│  [◄ Prev]  │  ┌────────────────────┬──────────────────────┐  │  [Next ►]  │
-│            │  │ TEXTO E INFORMACIÓN│ ILUSTRACIÓN / ASSET  │  │            │
-│            │  │                    │                      │  │            │
-│            │  │ Red FaCyT          │  [ facyt_hero_       │  │            │
-│            │  │ La gaceta digital  │    gazette.png ]     │  │            │
-│            │  │ universitaria.     │                      │  │            │
-│            │  │                    │                      │  │            │
-│            │  │ [ Empezar ahora ]  │                      │  │            │
-│            │  └────────────────────┴──────────────────────┘  │            │
-│            └─────────────────────────────────────────────────┘            │
-│                                                                           │
-│                              [ ●  ○  ○  ○ ]                               │
-│                                                                           │
-├───────────────────────────────────────────────────────────────────────────┤
-│  © 2026 Facultad Experimental de Ciencias y Tecnología — Universidad      │
-└───────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ [FaCyT]  Feed  Perfil  · ⚙  [🔍] [🌙] [👤]   │  ← Navbar
+├──────────────────────────────────────────────┤
+│  Publicaciones                               │
+│  [Buscar publicaciones........] [＋ Nueva]   │  ← FilterBar
+│  Filtros: [Categoría ▾] [Tipo ▾] [Autor ▾]   │
+│           [Estado ▾] [Desde ▾] [Hasta ▾]     │
+├──────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────┐     │
+│ │ [Categoría] [Post] [Publicado]      │     │  ← PostCard
+│ │ Título de la publicación             │     │     (fecha DESC:
+│ │ Autor • 12 mar 2026                 │     │      más reciente arriba)
+│ │ Extracto del contenido…     [⋮]     │     │
+│ └─────────────────────────────────────┘     │
+│ ┌─────────────────────────────────────┐     │
+│ │ [Categoría] [Artículo] [Borrador 🔒]│     │  ← solo visible para
+│ │ Quédate con el otro…                │     │     el propio autor
+│ │ …                                   │     │
+│ └─────────────────────────────────────┘     │
+└──────────────────────────────────────────────┘
 ```
 
----
+**Regla de visibilidad aplicada aquí (estático):** se filtran las publicaciones
+con `visibility = publicado`; se incluyen `borrador` y `oculto` solo si
+`author_id` coincide con la sesión ficticia.
 
-## 4. Desglose de Diapositivas (Contenido del Slider)
+### 3.2 `/posts/new` y `/posts/[id]` (detalle)
 
-| Diapositiva | Ilustración / Asset | Titular | Descripción | Acción Destacada |
-| --- | --- | --- | --- | --- |
-| **Slide 1: Presentación** | `facyt_hero_gazette.png` | **Red FaCyT: La Gaceta Digital** | La plataforma oficial de comunicación, noticias y ciencia de la Facultad Experimental de Ciencias y Tecnología. | Siguiente ➔ / Empezar |
-| **Slide 2: Noticias** | `news_pillar_icon.png` | **01. Avisos y Comunicados** | Entérate al instante de comunicados decanales, noticias departamentales y boletines académicos. | Siguiente ➔ |
-| **Slide 3: Académico** | `academic_pillar_icon.png` | **02. Publicaciones y Defensas** | Explora carteleras de trabajos de grado, publicaciones de investigación y seminarios de la facultad. | Siguiente ➔ |
-| **Slide 4: Comunidad** | `campus_pillar_icon.png` | **03. Vida Universitaria** | Participa activa e integradamente como estudiante, profesor o personal administrativo. | **[ Empezar Registro ]** |
+```
+Crear:
+│ Título [_____________________]
+│ Categoría [▾] · Tipo [¿Puede editarse?]  ────── Desglose → Portapapeles
+│ Visibilidad [● Público] [○ Borrador]
+│ Contenido [_________________________
+│           _________________________]
+│ [ Guardar como borrador ] [ Publicar ]
+│ Imagen: (bloqueo hasta backend) "Disponible en integración"
 
----
+Detalle /posts/[id]:
+│ [Categoría] [Artículo] [Publicado] [⋮]
+│ Título (serif display)
+│ Por [Autor] · 12 mar 2026 · Facultad
+│ ──────────
+│ contenido completo...
+│                                        (autor: [Editar] [Eliminar])
+│                                        (admin:  [Ocultar] [Eliminar])
+```
 
-## 5. Comportamientos Interactivos
+**Edición** (`/posts/[id]/edit`): mismo layout que el formulario, con el campo
+**fecha de publicación** bloqueado (regla de `implementation_base.md`); el resto
+editable.
 
-1. **Gestos Táctiles (Swipe en Móvil):**
-   - Deslizar a la izquierda avanza a la siguiente diapositiva.
-   - Deslizar a la derecha regresa a la diapositiva anterior.
-2. **Navegación por Teclado:**
-   - Teclas `Flecha Izquierda` y `Flecha Derecha` cambian la diapositiva activa.
-3. **Indicadores de Diapositiva (Dots/Pills):**
-   - Al hacer clic o tap en un punto indicador, cambia directamente a esa diapositiva.
-   - El punto activo se expande (`w-8`) y toma el color de acento `--accent` (#F59E0B).
+### 3.3 `/profile/[username]`
+
+```
+│ Avatar  Nombre Apellido       [rol badge]
+│ @username · Bio breve
+│ ─────────────────────────────
+│ Publicaciones  [＋ Nueva publicación]
+│ (cards del usuario, mismas reglas de visibilidad)
+```
+
+### 3.4 `/admin` (solo rol admin)
+
+```
+│ Gestión de usuarios                 [Buscar…]
+│ ┌────────────┬───────────┬───────────┐
+│ │ Usuario    │ Rol actual│ [▾] Cambiar│   ← asignar rol/permisos
+│ │ @j.rivas   │ Estudiante│ [Profesor] │
+│ │ @m.perez   │ Profesor   │ [Admin]    │
+│ └────────────┴───────────┴───────────┘
+```
+
+Asignar roles es la única función de `/admin` durante el MVP. Como el registro
+público no ofrece selector de rol, esta pantalla es el único punto por el que
+un usuario puede pasar de `estudiante` a `profesor` o `admin`
+([`auth.md`](auth.md) §10.2).
+
+## 4. Decisión del mecanismo de filtrado (justificación)
+
+El enunciado pide justificar el mecanismo más adecuado para una red
+**institucional** de facultad.
+
+- **Elegido:** filtros de lista **combinables** sobre una **búsqueda por palabra
+  clave**, más **orden por fecha DESC** por defecto.
+- **Por qué:** en una facultad el volumen de publicaciones es moderado pero
+  heterogéneo (eventos, avisos, defensas, talleres). Un usuario autenticado
+  busca típicamente *"defensas esta semana"* o *"talleres de mi facultad"*, que
+  exige combinar categoría, tipo y rango de fechas con palabras clave. Las
+  pestañas únicas (solo por categoría) obligan a perder contexto.
+- **Descartado:** filtro por estado visible en el feed público (solo útil para
+  admin); búsqueda avanzada full-text (bonificación, fuera del MVP).
+- **Relación con el backend futuro:** estos filtros se traducen a cláusulas
+  `WHERE` con índices en `category`, `type` y `published_at`. En fase estática
+  son funciones de filtrado sobre `src/data`, con análisis asintótico O(n) y
+  `short-circuit` evaluable en los tests.
+
+## 5. Navegación responsive
+
+| Breakpoint     | Comportamiento                                                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| < 768px        | Navbar colapsada a logo + hamburguesa; `BottomNav` con 4 destinos (Feed, Crear, Perfil, Admin si aplica)                                              |
+| 768–1024px     | Navbar completa, sin sidebar                                                                                                                           |
+| ≥ 1024px       | Navbar y layout de 2–3 columnas en el feed, sidebar opcional                                                                                           |
+| Login y registro | Tarjeta de 400px centrada en los tres breakpoints; sin cambios por ancho de pantalla (ver `wireframes_auth.md` §4)                                      |
