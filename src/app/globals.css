@@ -112,54 +112,6 @@
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Editorial parallax (CSS scroll-driven animations)
-
-   The planes drift while the section crosses the viewport. There is no scroll
-   listener and no JavaScript, so the cost is zero on the main thread and the
-   composition is static everywhere the feature is unavailable.
-
-   `prefers-reduced-motion: reduce` disables every plane (WCAG 2.3.3): the
-   `@media` guard below leaves the static composition from the markup.
-   --------------------------------------------------------------------------- */
-
-@keyframes facy-parallax-drift {
-  from {
-    translate: 0 0;
-  }
-
-  to {
-    translate: 0 var(--parallax-speed, 0%);
-  }
-}
-
-@keyframes facy-parallax-stretch {
-  from {
-    scale: var(--parallax-stretch-from, 0.6) 1;
-  }
-
-  to {
-    scale: 1 1;
-  }
-}
-
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    [data-parallax-motion="drift"] {
-      animation: facy-parallax-drift linear both;
-      animation-timeline: view();
-      animation-range: cover 0% cover 100%;
-    }
-
-    [data-parallax-motion="stretch"] {
-      animation: facy-parallax-stretch linear both;
-      animation-timeline: view();
-      animation-range: cover 0% cover 100%;
-      transform-origin: left center;
-    }
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
