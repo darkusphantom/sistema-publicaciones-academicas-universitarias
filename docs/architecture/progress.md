@@ -18,7 +18,7 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 | Esqueleto de carpetas | `src/components/{ui,layout,feed,forms,shared}`, `src/data`, `src/test`, `src/lib/repositories`, rutas `(main)/posts/{new,[id]}` + `admin` | 2026-09-25 |
 | Skill de contexto del proyecto | `.opencode/skills/project-context/SKILL.md` (lectura obligatoria + documentación post-implementación) | 2026-09-25 |
 | Pantalla de bienvenida `/` (spec `docs/design/welcome.md`) | Parallax vertical CSS-first + guard de onboarding (`localStorage facy:onboarding` → `/login`), copy final aprobado, tokens claro/oscuro, `theme.ts` store externo, `button.tsx`/iconos propios, `theme-toggle`, `footer`, `(landing)` top-bar. Spec preexistente en `wireframes.md` §2.1 | 2026-09-25 |
-| Vista de autenticación `/login` y `/register` | Formularios accesibles (`Field`, `FormAlert`), validación pura (`validateLogin`, `validateRegister`), repositorio estático en-memoria (`StaticAuthGateway`), navegación protegida (`AuthGuard`) redirigiendo a `/feed`. | 2026-09-26 |
+| Vista de autenticación `/login` y `/register` | Formularios accesibles (`Field`, `FormAlert`), validación pura (`validateLogin`, `validateRegister`), repositorio estático en-memoria (`StaticAuthGateway`), navegación protegida (`AuthGuard`) redirigiendo a `/feed`. Ver reporte en `docs/tests/auth-integration-report.md`. | 2026-09-26 |
 
 ## En progreso
 
