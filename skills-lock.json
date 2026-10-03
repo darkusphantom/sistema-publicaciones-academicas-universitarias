@@ -132,6 +132,18 @@
       "sourceType": "github",
       "skillPath": "skills/webapp-testing/SKILL.md",
       "computedHash": "e386cf78f5a002c8fa684066f933c670571f3cfb43b0d66bfc82050d74d6ea64"
+    },
+    "pentesting": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/pentesting/SKILL.md",
+      "computedHash": "local"
+    },
+    "seguridad": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/seguridad/SKILL.md",
+      "computedHash": "local"
     }
   }
 }
