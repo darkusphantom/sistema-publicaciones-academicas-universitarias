@@ -14,6 +14,7 @@ permission:
   task: allow
   skill:
     "*": deny
+    project-context: allow
     seguridad: allow
     security-best-practices: allow
     better-auth-security-best-practices: allow

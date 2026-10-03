@@ -13,6 +13,7 @@ permission:
   bash: deny
   skill:
     "*": deny
+    project-context: allow
     security-best-practices: allow
     better-auth-security-best-practices: allow
     postgresql-best-practices: allow
