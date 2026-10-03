@@ -20,6 +20,7 @@ permission:
     "npm*": allow
   skill:
     "*": deny
+    project-context: allow
     pentesting: allow
     security-best-practices: allow
     webapp-testing: allow
