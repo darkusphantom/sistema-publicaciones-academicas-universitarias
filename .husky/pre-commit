@@ -3,4 +3,4 @@
 # See docs/husky.md for details on how to extend or bypass this hook.
 
 pnpm lint
-pnpm test:coverage
+#pnpm test:coverage

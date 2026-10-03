@@ -8,7 +8,8 @@ por área viven en archivos propios:
 | ----------------------------- | ------------------------------------------ | ----------------------- |
 | Bienvenida `/`                | [`wireframes_welcome.md`](wireframes_welcome.md) | [`welcome.md`](welcome.md)   |
 | Autenticación `/login`, `/register` | [`wireframes_auth.md`](wireframes_auth.md)   | [`auth.md`](auth.md)         |
-| Feed, posts, perfil, admin    | §3 de este documento                       | —                       |
+| Feed `/feed`                  | [`wireframes_feed.md`](wireframes_feed.md) | [`wireframes_feed.md`](wireframes_feed.md) (documento único) |
+| Posts, perfil, admin          | §3.2–§3.4 de este documento               | —                       |
 
 > [!NOTE]
 > Los wireframes de la bienvenida se movieron a `wireframes_welcome.md` y los de
@@ -56,32 +57,23 @@ Las pantallas de `(landing)` y `(auth)` están especificadas en
 
 ### 3.1 `/feed` Dashboard — vista principal
 
-```
-┌──────────────────────────────────────────────┐
-│ [FaCyT]  Feed  Perfil  · ⚙  [🔍] [🌙] [👤]   │  ← Navbar
-├──────────────────────────────────────────────┤
-│  Publicaciones                               │
-│  [Buscar publicaciones........] [＋ Nueva]   │  ← FilterBar
-│  Filtros: [Categoría ▾] [Tipo ▾] [Autor ▾]   │
-│           [Estado ▾] [Desde ▾] [Hasta ▾]     │
-├──────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────┐     │
-│ │ [Categoría] [Post] [Publicado]      │     │  ← PostCard
-│ │ Título de la publicación             │     │     (fecha DESC:
-│ │ Autor • 12 mar 2026                 │     │      más reciente arriba)
-│ │ Extracto del contenido…     [⋮]     │     │
-│ └─────────────────────────────────────┘     │
-│ ┌─────────────────────────────────────┐     │
-│ │ [Categoría] [Artículo] [Borrador 🔒]│     │  ← solo visible para
-│ │ Quédate con el otro…                │     │     el propio autor
-│ │ …                                   │     │
-│ └─────────────────────────────────────┘     │
-└──────────────────────────────────────────────┘
-```
+Especificación completa en [`wireframes_feed.md`](wireframes_feed.md): shell
+`(main)` con `Navbar` y `BottomNav`, wireframes móvil y escritorio, contratos de
+datos (`Post`, `PostFilters`), inventario de filtros con copy, componentes
+(`PostCard`, `FilterBar`, `LoadMore`, `EmptyState`), estados, accesibilidad,
+tokens y guía de archivos para el `developer`.
+
+> [!NOTE]
+> Este documento §3.1 pasó a ser un puntero cuando el feed encontró su propio
+> archivo, siguiendo el mismo criterio que se aplicó con la bienvenida y la
+> autenticación. El shell `(main)` se especifica allí porque el feed es su primera
+> pantalla.
 
 **Regla de visibilidad aplicada aquí (estático):** se filtran las publicaciones
-con `visibility = publicado`; se incluyen `borrador` y `oculto` solo si
-`author_id` coincide con la sesión ficticia.
+con `visibility = publicado`; se incluyen `borrador` y `oculto` si `author_id`
+coincide con la sesión ficticia, y `oculto` también para el rol `admin`. La regla
+completa, con su tabla de las nueve combinaciones, está en
+[`wireframes_feed.md`](wireframes_feed.md) §4.4.
 
 ### 3.2 `/posts/new` y `/posts/[id]` (detalle)
 
