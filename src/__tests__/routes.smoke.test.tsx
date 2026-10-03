@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "@/app/(auth)/login/page";
@@ -11,10 +12,26 @@ import ProfilePage from "@/app/(main)/profile/[username]/page";
  * The welcome screen redirects recurrent visitors with the App Router client
  * navigation, which is not available outside the router runtime.
  */
-const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+const { replace, push } = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace }),
+  useRouter: () => ({ replace, push }),
+  usePathname: () => "/feed",
+}));
+
+vi.mock("@/lib/session/session-provider", () => ({
+  SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useSession: () => ({
+    status: "authenticated",
+    session: { user: { id: "u-3", username: "m.rivas", role: "estudiante" }, expiresAt: "2099-01-01T00:00:00Z" },
+    signOut: vi.fn(),
+  }),
+}));
+
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: unknown }) => (
+    <a href={href} {...props}>{children}</a>
+  ),
 }));
 
 /**
@@ -67,10 +84,10 @@ describe("route smoke tests", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the feed page", () => {
-    render(<FeedPage />);
+  it("renders the feed page", async () => {
+    render(await FeedPage({ searchParams: Promise.resolve({}) }));
 
-    expect(screen.getByRole("heading", { name: "Feed" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Publicaciones" })).toBeInTheDocument();
   });
 
   it("renders the profile page", () => {
