@@ -18,8 +18,9 @@ function makePost(overrides: Partial<Post> = {}): Post {
     title: "Cartelera de defensas de grado",
     content: "El cronograma de las próximas defensas de grado.",
     authorId: "u-1",
-    category: "defensas",
-    type: "articulo",
+    type: "defensas",
+    category: "computacion",
+    researchArea: "general",
     visibility: "publicado",
     publishedAt: "2026-03-12T10:00:00Z",
     createdAt: "2026-03-12T10:00:00Z",
@@ -51,6 +52,16 @@ describe("normalizeSearchText", () => {
   it("handles empty string", () => {
     expect(normalizeSearchText("")).toBe("");
   });
+
+  it("removes a single leading #", () => {
+    expect(normalizeSearchText("#defensas")).toBe("defensas");
+    expect(normalizeSearchText(" #defensas")).toBe("defensas"); // due to trim
+  });
+
+  it("leaves # intact if not leading", () => {
+    expect(normalizeSearchText("c#")).toBe("c#");
+    expect(normalizeSearchText("taller # 1")).toBe("taller # 1");
+  });
 });
 
 // ─── fromSearchParams ─────────────────────────────────────────────────────────
@@ -61,8 +72,8 @@ describe("fromSearchParams", () => {
   });
 
   it("parses a valid category", () => {
-    const result = fromSearchParams({ categoria: "noticias" });
-    expect(result.category).toBe("noticias");
+    const result = fromSearchParams({ categoria: "computacion" });
+    expect(result.category).toBe("computacion");
   });
 
   it("falls back to 'todas' for an invalid category", () => {
@@ -71,13 +82,23 @@ describe("fromSearchParams", () => {
   });
 
   it("parses a valid type", () => {
-    const result = fromSearchParams({ tipo: "articulo" });
-    expect(result.type).toBe("articulo");
+    const result = fromSearchParams({ tipo: "noticias" });
+    expect(result.type).toBe("noticias");
   });
 
   it("falls back to 'todos' for an invalid type", () => {
     const result = fromSearchParams({ tipo: "nonexistent" });
     expect(result.type).toBe("todos");
+  });
+
+  it("parses a valid researchArea", () => {
+    const result = fromSearchParams({ area: "robotica" });
+    expect(result.researchArea).toBe("robotica");
+  });
+
+  it("falls back to 'todas' for an invalid researchArea", () => {
+    const result = fromSearchParams({ area: "nonexistent" });
+    expect(result.researchArea).toBe("todas");
   });
 
   it("parses a valid status", () => {
@@ -131,11 +152,13 @@ describe("toSearchParams", () => {
     const filters: PostFilters = {
       ...DEFAULT_POST_FILTERS,
       keyword: "defensas",
-      category: "noticias",
+      category: "computacion",
+      researchArea: "robotica",
     };
     const params = toSearchParams(filters);
     expect(params.get("q")).toBe("defensas");
-    expect(params.get("categoria")).toBe("noticias");
+    expect(params.get("categoria")).toBe("computacion");
+    expect(params.get("area")).toBe("robotica");
   });
 
   it("omits fields that have default values", () => {
@@ -161,18 +184,19 @@ describe("countActiveFilters", () => {
     const filters: PostFilters = {
       ...DEFAULT_POST_FILTERS,
       keyword: "test",
-      category: "noticias",
-      type: "articulo",
+      category: "computacion",
+      type: "noticias",
+      researchArea: "robotica",
       authorId: "u-1",
       status: "publicado",
       dateFrom: "2026-03-01",
       dateTo: "2026-03-31",
     };
-    expect(countActiveFilters(filters)).toBe(7);
+    expect(countActiveFilters(filters)).toBe(8);
   });
 
   it("counts only the active dimensions", () => {
-    const filters: PostFilters = { ...DEFAULT_POST_FILTERS, category: "eventos" };
+    const filters: PostFilters = { ...DEFAULT_POST_FILTERS, category: "computacion" };
     expect(countActiveFilters(filters)).toBe(1);
   });
 });
@@ -219,8 +243,9 @@ describe("applyFilters", () => {
       id: "p-1",
       title: "Cartelera de defensas",
       content: "Contenido defensa",
-      category: "defensas",
-      type: "articulo",
+      type: "defensas",
+      category: "computacion",
+      researchArea: "general",
       authorId: "u-1",
       publishedAt: "2026-03-12T10:00:00Z",
     }),
@@ -228,8 +253,9 @@ describe("applyFilters", () => {
       id: "p-2",
       title: "Taller de software",
       content: "Taller de desarrollo de software libre",
-      category: "eventos",
-      type: "post",
+      type: "eventos",
+      category: "matematicas",
+      researchArea: "estadistica",
       authorId: "u-2",
       publishedAt: "2026-03-11T09:00:00Z",
     }),
@@ -237,8 +263,9 @@ describe("applyFilters", () => {
       id: "p-3",
       title: "Convocatoria de beca",
       content: "Beca disponible para estudiantes",
-      category: "convocatorias",
-      type: "ensenanza",
+      type: "convocatorias",
+      category: "biologia",
+      researchArea: "general",
       authorId: "u-3",
       publishedAt: "2026-02-02T08:00:00Z",
     }),
@@ -250,12 +277,17 @@ describe("applyFilters", () => {
   });
 
   it("filters by category", () => {
-    const result = applyFilters(posts, { ...noFilters, category: "eventos" });
+    const result = applyFilters(posts, { ...noFilters, category: "matematicas" });
     expect(result.map((p) => p.id)).toEqual(["p-2"]);
   });
 
   it("filters by type", () => {
-    const result = applyFilters(posts, { ...noFilters, type: "post" });
+    const result = applyFilters(posts, { ...noFilters, type: "eventos" });
+    expect(result.map((p) => p.id)).toEqual(["p-2"]);
+  });
+
+  it("filters by researchArea", () => {
+    const result = applyFilters(posts, { ...noFilters, researchArea: "estadistica" });
     expect(result.map((p) => p.id)).toEqual(["p-2"]);
   });
 
@@ -292,7 +324,7 @@ describe("applyFilters", () => {
   it("combines multiple filters", () => {
     const result = applyFilters(posts, {
       ...noFilters,
-      category: "defensas",
+      type: "defensas",
       dateFrom: "2026-03-01",
     });
     expect(result.map((p) => p.id)).toEqual(["p-1"]);

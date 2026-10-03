@@ -3,6 +3,7 @@ import {
   type PostFilters,
   type PostCategory,
   type PostType,
+  type ResearchArea,
   type PostVisibility,
   type AuthorOption,
   DEFAULT_POST_FILTERS,
@@ -11,6 +12,15 @@ import {
 // ─── Valid domain value sets ──────────────────────────────────────────────────
 
 const VALID_CATEGORIES = new Set<PostCategory>([
+  "matematicas",
+  "biologia",
+  "quimica",
+  "fisica",
+  "computacion",
+  "crecimiento-profesional",
+]);
+
+const VALID_TYPES = new Set<PostType>([
   "noticias",
   "eventos",
   "defensas",
@@ -18,7 +28,15 @@ const VALID_CATEGORIES = new Set<PostCategory>([
   "convocatorias",
 ]);
 
-const VALID_TYPES = new Set<PostType>(["post", "articulo", "ensenanza"]);
+const VALID_RESEARCH_AREAS = new Set<ResearchArea>([
+  "general",
+  "estadistica", "probabilidad", "optimizacion", "matematicas-aplicadas", "modelado-matematico",
+  "biotecnologia", "bioquimica", "genetica", "microbiologia", "ecologia", "bioinformatica",
+  "quimica-analitica", "quimica-organica", "quimica-inorganica", "fisicoquimica", "quimica-medioambiental",
+  "fisica-computacional", "fisica-de-materiales", "astronomia", "fisica-nuclear", "mecanica-de-fluidos",
+  "inteligencia-artificial", "aprendizaje-automatico", "ciencia-de-datos", "desarrollo-web", "ingenieria-software", "redes-telecomunicaciones", "seguridad-informatica", "sistemas-distribuidos", "bases-de-datos", "computacion-grafica", "robotica", "arquitectura-computadores",
+  "gestion-proyectos", "liderazgo", "emprendimiento", "comunicacion-profesional", "etica-profesional",
+]);
 
 const VALID_STATUSES = new Set<PostVisibility>([
   "publicado",
@@ -42,11 +60,13 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
  * @complexity O(n) — single pass over the string.
  */
 export function normalizeSearchText(value: string): string {
-  return value
+  const normalized = value
     .trim()
     .toLowerCase()
     .normalize("NFD")
     .replace(/\p{M}/gu, "");
+
+  return normalized.replace(/^#/, "");
 }
 
 /**
@@ -60,6 +80,7 @@ export function normalizeSearchText(value: string): string {
  * - `q`         → `q`
  * - `categoria` → `category`
  * - `tipo`      → `type`
+ * - `area`      → `researchArea`
  * - `autor`     → `authorId`
  * - `estado`    → `status`
  * - `desde`     → `dateFrom`
@@ -89,6 +110,11 @@ export function fromSearchParams(
     ? (rawType as PostType)
     : "todos";
 
+  const rawArea = getString("area");
+  const researchArea = VALID_RESEARCH_AREAS.has(rawArea as ResearchArea)
+    ? (rawArea as ResearchArea)
+    : "todas";
+
   const rawStatus = getString("estado");
   const status = VALID_STATUSES.has(rawStatus as PostVisibility)
     ? (rawStatus as PostVisibility)
@@ -108,7 +134,7 @@ export function fromSearchParams(
       ? rawDateTo
       : null;
 
-  return { keyword: rawQ, category, type, authorId, status, dateFrom, dateTo };
+  return { keyword: rawQ, category, type, researchArea, authorId, status, dateFrom, dateTo };
 }
 
 /**
@@ -124,15 +150,16 @@ export function fromSearchParams(
  */
 export function toSearchParams(filters: PostFilters): URLSearchParams {
   const params = new URLSearchParams();
-  const d = DEFAULT_POST_FILTERS;
+  const defaultPost = DEFAULT_POST_FILTERS;
 
-  if (filters.keyword !== d.keyword) params.set("q", filters.keyword);
-  if (filters.category !== d.category) params.set("categoria", filters.category);
-  if (filters.type !== d.type) params.set("tipo", filters.type);
-  if (filters.authorId !== d.authorId) params.set("autor", filters.authorId);
-  if (filters.status !== d.status) params.set("estado", filters.status);
-  if (filters.dateFrom !== d.dateFrom) params.set("desde", filters.dateFrom!);
-  if (filters.dateTo !== d.dateTo) params.set("hasta", filters.dateTo!);
+  if (filters.keyword !== defaultPost.keyword) params.set("q", filters.keyword);
+  if (filters.category !== defaultPost.category) params.set("categoria", filters.category);
+  if (filters.type !== defaultPost.type) params.set("tipo", filters.type);
+  if (filters.researchArea !== defaultPost.researchArea) params.set("area", filters.researchArea);
+  if (filters.authorId !== defaultPost.authorId) params.set("autor", filters.authorId);
+  if (filters.status !== defaultPost.status) params.set("estado", filters.status);
+  if (filters.dateFrom !== defaultPost.dateFrom) params.set("desde", filters.dateFrom!);
+  if (filters.dateTo !== defaultPost.dateTo) params.set("hasta", filters.dateTo!);
 
   return params;
 }
@@ -147,15 +174,16 @@ export function toSearchParams(filters: PostFilters): URLSearchParams {
  * @complexity O(1) — constant comparisons.
  */
 export function countActiveFilters(filters: PostFilters): number {
-  const d = DEFAULT_POST_FILTERS;
+  const defaultPost = DEFAULT_POST_FILTERS;
   let count = 0;
-  if (filters.keyword !== d.keyword) count++;
-  if (filters.category !== d.category) count++;
-  if (filters.type !== d.type) count++;
-  if (filters.authorId !== d.authorId) count++;
-  if (filters.status !== d.status) count++;
-  if (filters.dateFrom !== d.dateFrom) count++;
-  if (filters.dateTo !== d.dateTo) count++;
+  if (filters.keyword !== defaultPost.keyword) count++;
+  if (filters.category !== defaultPost.category) count++;
+  if (filters.type !== defaultPost.type) count++;
+  if (filters.researchArea !== defaultPost.researchArea) count++;
+  if (filters.authorId !== defaultPost.authorId) count++;
+  if (filters.status !== defaultPost.status) count++;
+  if (filters.dateFrom !== defaultPost.dateFrom) count++;
+  if (filters.dateTo !== defaultPost.dateTo) count++;
   return count;
 }
 
@@ -218,6 +246,11 @@ export function applyFilters(posts: Post[], filters: PostFilters): Post[] {
 
     // Type filter
     if (filters.type !== "todos" && post.type !== filters.type) {
+      return false;
+    }
+
+    // Research Area filter
+    if (filters.researchArea !== "todas" && post.researchArea !== filters.researchArea) {
       return false;
     }
 

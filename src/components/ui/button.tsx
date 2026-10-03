@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
  * - `secondary` is a neutral bordered surface.
  * - `ghost` is a borderless text action.
  */
-export type ButtonVariant = "primary" | "secondary" | "ghost";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 /** Available sizes; every size keeps a ≥ 44px touch target (WCAG 2.5.8). */
 export type ButtonSize = "sm" | "md" | "lg";
@@ -29,6 +29,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   secondary:
     "border border-border bg-surface text-text hover:bg-surface-muted",
   ghost: "bg-transparent text-text hover:bg-surface-muted",
+  danger: "bg-danger text-accent-foreground hover:bg-danger/90",
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {

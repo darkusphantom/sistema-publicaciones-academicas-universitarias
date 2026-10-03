@@ -25,6 +25,21 @@ export type PageOptions = {
   offset: number;
 };
 
+import { type PostCategory, type PostType, type ResearchArea, type PostVisibility } from "@/lib/types";
+
+export type CreatePostInput = {
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  type: PostType;
+  category: PostCategory;
+  researchArea: ResearchArea;
+  /** Derivada del botón pulsado, no de un campo del formulario. */
+  visibility: Extract<PostVisibility, "publicado" | "borrador">;
+};
+
+export type UpdatePostInput = Partial<Omit<CreatePostInput, "visibility">>;
+
 /**
  * Hexagonal port for post data access.
  *
@@ -62,6 +77,22 @@ export interface PostRepository {
    * @returns The post, or `null`.
    */
   findById(id: string): Promise<Post | null>;
+
+  /** Crea una publicación. Fija `authorId` desde la sesión, nunca desde el formulario. */
+  create(input: CreatePostInput, session: Session): Promise<Post>;
+
+  /** Actualiza. Lanza si la publicación no existe o si la sesión no es su autor. */
+  update(id: string, patch: UpdatePostInput, session: Session): Promise<Post>;
+
+  /** Borrado definitivo. Ver §10.5. */
+  remove(id: string, session: Session): Promise<void>;
+
+  /** Solo `admin`. Único camino hacia "oculto" (§10.5). */
+  setVisibility(
+    id: string,
+    visibility: PostVisibility,
+    session: Session,
+  ): Promise<Post>;
 }
 
 /**

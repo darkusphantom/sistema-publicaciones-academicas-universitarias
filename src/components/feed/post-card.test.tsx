@@ -7,10 +7,11 @@ function makePost(overrides: Partial<Post> = {}): Post {
   return {
     id: "p-1",
     title: "Cartelera de defensas de grado",
-    content: "El cronograma de las próximas defensas.",
+    content: "El cronograma de las próximas defensas con #defensa.",
     authorId: "u-1",
-    category: "defensas",
-    type: "articulo",
+    category: "computacion",
+    researchArea: "inteligencia-artificial",
+    type: "defensas",
     visibility: "publicado",
     publishedAt: "2026-03-12T10:00:00Z",
     createdAt: "2026-03-12T10:00:00Z",
@@ -33,10 +34,11 @@ describe("PostCard", () => {
     expect(link).toHaveAttribute("href", "/posts/p-1");
   });
 
-  it("renders category, type badges", () => {
+  it("renders type badge, extracted hashtags and taxonomy line", () => {
     render(<PostCard post={makePost()} author={author} />);
-    expect(screen.getByText("Defensas")).toBeInTheDocument();
-    expect(screen.getByText("Artículo")).toBeInTheDocument();
+    expect(screen.getByText("Defensas")).toBeInTheDocument(); // type badge
+    expect(screen.getByText("#defensa")).toBeInTheDocument(); // hashtag
+    expect(screen.getByText("Computación · Inteligencia Artificial")).toBeInTheDocument(); // taxonomy
   });
 
   it("does NOT render a visibility badge for publicado posts", () => {
