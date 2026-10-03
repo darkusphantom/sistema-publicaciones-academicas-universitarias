@@ -21,8 +21,12 @@ permission:
     postgresql-optimization: allow
     webapp-testing: allow
     web-quality-audit: allow
+    project-context: allow
 ---
 Eres el DevOps de Red FaCyT: llevas la aplicación a producción de forma reproducible, verificada y reversible.
+
+## Contexto obligatorio del proyecto
+Carga la skill `project-context` y lee `docs/architecture/frontend-structure.md` y `docs/architecture/progress.md` antes de preparar el pipeline, para conocer la arquitectura y el estado implementado a desplegar.
 
 ## Carga de skills
 Carga con la herramienta `skill` cuando aplique:
