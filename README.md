@@ -17,6 +17,7 @@ Aplicación web para publicaciones académicas y vida universitaria de la **Facu
 | [Husky 9](https://typicode.github.io/husky/) | Hooks de Git (gate de calidad pre-commit) |
 | [PNPM](https://pnpm.io/) | Gestor de paquetes |
 | [PostgreSQL](https://www.postgresql.org/) | Base de datos local (fase de backend) |
+| [Hono](https://hono.dev/) | Framework de la API en `apps/api` (`@red-facyt/api`) |
 | [Vercel](https://vercel.com/) | Despliegue |
 
 ## Requisitos
@@ -73,8 +74,17 @@ Copia `.env.example` a `.env.local` y ajusta los valores. Nunca se suben secreto
 
 ## Estructura del proyecto
 
+Monorepo **pnpm** con dos workspaces:
+
 ```
-src/
+apps/
+└── api/                     # API backend (@red-facyt/api) — Hono 4
+    ├── src/app.ts           #   createApp() puro y testeable
+    ├── src/server.ts        #   bootstrap HTTP (@hono/node-server)
+    ├── src/config/env.ts    #   entorno con zod (fail-fast)
+    ├── src/middleware/      #   seguridad: CORS, headers, body-limit, error-handler…
+    └── src/domain/          #   puertos hexagonales (contrato del frontend)
+src/                        # Web frontend (Next.js) en la raíz
 ├── app/
 │   ├── (landing)/              # Ruta pública: /
 │   ├── (auth)/                 # Rutas públicas: /login, /register
@@ -84,6 +94,31 @@ src/
 ├── lib/                        # Utilidades puras (format.ts)
 └── __tests__/                  # Tests de humo de las rutas
 ```
+
+## API (`apps/api`)
+
+La API vive en `apps/api` (workspace `@red-facyt/api`), implementada con **Hono 4** y `@hono/node-server`. Por el momento es un **scaffold**: patrón `createApp`, entorno validado con zod, middleware de seguridad (CORS whitelist, security headers, body limit, error handler sin fuga de stack, 404 JSON, `x-request-id`) y el endpoint de salud `GET /api/v1/health`. La estructura está preparada para crecer hacia Better Auth + PostgreSQL sin rework (puertos hexagonales en `src/domain/`).
+
+```bash
+# Instalar dependencias de la API (desde la raíz)
+pnpm install
+
+# Ejecutar la API en desarrollo (puerto 3001)
+pnpm --filter @red-facyt/api dev
+
+# Verificar la salud
+curl http://localhost:3001/api/v1/health
+
+# Tests y calidad de la API
+cd apps/api
+pnpm test:coverage   # umbral ≥ 80%
+pnpm typecheck
+pnpm lint
+```
+
+> **Windows/pnpm**: en este entorno `pnpm run` dispara un chequeo de `install` que puede crashear; usa los binarios locales (`npx tsc`, `npx eslint`, `npx vitest run --coverage`) dentro de `apps/api` si ocurre.
+
+Documentación de la API: [`docs/architecture/api-structure.md`](docs/architecture/api-structure.md) y [`docs/security/threat-model-api.md`](docs/security/threat-model-api.md).
 
 ## Despliegue en Vercel
 
@@ -107,4 +142,7 @@ src/
 - [`docs/Proyecto1_Junio2026.md`](docs/Proyecto1_Junio2026.md) — enunciado del proyecto
 - [`docs/design/wireframes.md`](docs/design/wireframes.md) — mapa de navegación y esquemas
 - [`docs/implementation/implementation_base.md`](docs/implementation/implementation_base.md) — requisitos base de la estructura principal
+- [`docs/architecture/api-structure.md`](docs/architecture/api-structure.md) — arquitectura de la API (`apps/api`)
+- [`docs/security/threat-model-api.md`](docs/security/threat-model-api.md) — modelo de amenaza de la API
+- [`docs/tests/api-scaffold-test-report.md`](docs/tests/api-scaffold-test-report.md) — evidencia de pruebas del scaffold de la API
 - [`docs/husky.md`](docs/husky.md) — gate de calidad pre-commit

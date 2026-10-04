@@ -41,6 +41,8 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 | `src/components/feed/load-more.tsx` + tests | LoadMore paginación acumulativa: solo visible cuando shown < total, lote en label. 5 tests. | 2026-10-02 |
 | `src/components/feed/feed-view.tsx` | FeedView orquestador cliente: sesión, repositorios, URL params, paginación, estados vacíos, contador role="status". | 2026-10-02 |
 | `src/app/(main)/feed/page.tsx` | Página /feed Server Component: parsea searchParams, pre-carga autores, key reset de paginación. | 2026-10-02 |
+| Scaffold API `apps/api` (Hono 4) | Monorepo pnpm (`apps/*`): `@red-facyt/api`, patrón `createApp` puro, `@hono/node-server`, config env zod fail-fast, middleware de seguridad (CORS whitelist, headers, body-limit 413, error-handler sin stack, 404 JSON, request-id, rate-limit slot), puertos hexagonales espejo del contrato frontend (`domain/{post,user,session}.ts`), `GET /api/v1/health`. TDD 28 tests + 11 smoke (39/39 PASS). Ver `docs/architecture/api-structure.md`, `docs/security/threat-model-api.md`, `docs/tests/api-scaffold-test-report.md`. | 2026-10-03 |
+| Gate Husky multi-workspace + `allowBuilds.esbuild` | `pnpm-workspace.yaml` con `allowBuilds.esbuild: true` (era placeholder); `.husky/pre-commit` cubre web (`pnpm lint`) + API (`pnpm --filter @red-facyt/api lint`); `eslint.config.mjs` raíz ignora `apps/**` (cada workspace tiene su config). `docs/husky.md` actualizado. | 2026-10-03 |
 
 ## En progreso
 
@@ -54,7 +56,9 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 | --- | --- | --- |
 | Reescribir smoke tests con `vi.mock` | pantallas reales | repos/`next-themes`/`next/navigation` |
 | Ajustar umbrales/exclusiones `vitest.config.mts` + `typecheck` en Husky | pantallas + tests | p. ej. excluir `ui/**`/`app/**`, `lib/`/`data/` ≥ 90% |
-| Backend (PostgreSQL) + auth | fase frontend | Better Auth, Server Actions, contrato de repositorio |
+| Endpoints de negocio de la API (feed, posts, perfiles, admin) | scaffold API | Implementar contratos de `api-structure.md` §7 sobre los puertos hexagonales (`/api/v1/*`) con validación zod |
+| Backend PostgreSQL + auth (Better Auth) | endpoints API | Hacer `BETTER_AUTH_SECRET`/`DATABASE_URL` requeridas en prod, conectar `hono-rate-limiter` en el slot, adaptadores `infrastructure/repositories/` |
+| Integración frontend ↔ API | endpoints API | Sustituir repositorios estáticos (`post-repository.static.ts`, `auth-gateway.static.ts`) por consumo de la API |
 
 ## Estado de tests
 
@@ -63,9 +67,12 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 | Smoke de rutas + `format` | 6/6 pasan (actualizado para FeedPage async) | — |
 | Dominio del feed (`visibility` + `filters` + contract) | 68/68 pasan | 100% |
 | Componentes del feed (`PostCard` + `LoadMore` + `EmptyState`) | 18/18 pasan | — |
-| Suite completa (25 archivos, 237 tests) | 237/237 pasan | ≥ 80% global |
+| Suite completa web (25 archivos, 237 tests) | 237/237 pasan | ≥ 80% global |
+| Suite API `apps/api` (3 archivos, 28 tests) + smoke real | 28/28 pasan; smoke 11/11 (39/39 total) | 100% stmts/funcs/lines, 88.88% branches |
 
 ## Registro de cambios (últimos)
+
+- **2026-10-03 — Scaffold inicial de la API (`apps/api`, Hono 4)**: completado el pipeline completo (diseño → implementación → review → testing → documentación). Diseño: `docs/architecture/api-structure.md` (estructura, `createApp` puro, env zod fail-fast, contrato hexagonal espejo, mapa de endpoints futuros `/api/v1`) + `docs/security/threat-model-api.md` (modelo de amenaza R1–R9) emitidos por el `security-architect`. Implementación TDD del `developer`: `apps/api` con `package.json`/`tsconfig`/`vitest` (entorno node, umbral ≥ 80%)/`eslint` (typescript-eslint), `src/app.ts` (factory `createApp`), `server.ts`/`index.ts` (bootstrap + graceful shutdown), `config/env.ts` (zod fail-fast), 7 middleware de seguridad, `domain/{post,user,session}.ts` (puertos espejo). Review: `qa-reviewer` (0 🔴) y `security-reviewer` (cumple P0/P1, 1 Medio); corregidos W2 (HTTPException en error-handler), W3/H1 (redact cookie/authorization en pino-http), W4/H2 (correlación `x-request-id`), B1 (413 con headers), B2 (LOG_LEVEL enum), B3 (CORS_ORIGINS trim), B6 (test dev). Testing: 28 unitarios + 11 smoke real (39/39 PASS), evidencia en `docs/tests/api-scaffold-test-report.md`. Desvíos registrados: `hono/secure-headers` es submódulo integrado (sin dependencia aparte); `src/index.ts`/`server.ts` excluidos de cobertura (bootstrap de red). Pendiente coordinación `devops`: extender Husky a ambos workspaces y resolver `allowBuilds.esbuild` (placeholder) en `pnpm-workspace.yaml`.
 
 - **2026-10-02 — Implementación completa del feed `/feed`**: implementadas todas las fases del plan: (1) Dominio puro — `visibility.ts`, `filters.ts` (68 tests, 100%); (2) Datos — `users.ts` ampliado a 5 usuarios, `posts.ts` con 12 publicaciones mock; (3) Repositorios hexagonales — interfaces `PostRepository`/`UserRepository` + implementaciones estáticas + 12 contract tests; (4) Shell `(main)` — `SessionProvider`, `Navbar`, `BottomNav`, `(main)/layout.tsx`; (5) Primitivos UI — `Badge`, `SelectField`, 8 iconos nuevos; (6) Componentes del feed — `EmptyState` (5 tests), `PostCard` (8 tests), `FilterBar`, `LoadMore` (5 tests), `FeedView`; (7) Página `/feed` Server Component con `searchParams` async. Instalado `@testing-library/user-event`. Smoke test de `FeedPage` actualizado a firma async. Build exitoso: `/feed` como ruta dinámica `ƒ`. Suite: **237/237 tests, 25 archivos, 0 fallos**. Desvíos registrados: `findAll→findVisible` en repositorio (documentado en JSDoc), `FeedView` no figuraba en `frontend-structure.md` (agregado), `src/components/landing/` sin registrar en arquitectura (pendiente).
 - **2026-09-26 — Vista de Autenticación `/login` y `/register`**: Implementados los formularios de inicio de sesión y registro siguiendo `docs/design/auth.md`. Desarrollo en TDD: funciones de validación puras, componentes UI accesibles (`Field` y `FormAlert` con ARIA-live alert y labels vinculados), `StaticAuthGateway` imitando el backend con promesas, y componente `AuthGuard` para redirigir si ya hay sesión. 151 tests pasando al 100%, lint sin warnings y cobertura superando umbrales configurados.
