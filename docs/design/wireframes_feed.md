@@ -11,10 +11,40 @@ documento tal cual y el `qa-reviewer` valida el resultado contra él.
 - **Accesibilidad transversal:** [`accessibility.md`](accessibility.md)
 - **Requisitos del MVP:** [`../implementation/implementation_base.md`](../implementation/implementation_base.md) §Publicaciones y §Feed
 - **Antecedente de formato:** [`auth.md`](auth.md)
+- **Modelo de datos, taxonomía y CRUD:** [`wireframes_posts.md`](wireframes_posts.md) §4
 
 > [!IMPORTANT]
 > `docs/design/components.md` describe **solo** la pantalla de bienvenida. Los
 > componentes del feed se especifican aquí, en §6, sin tocar ese archivo.
+
+### Revisión 2 — sincronización con `wireframes_posts.md`
+
+Este documento se revisó para que el feed deje de contradecir al documento de
+publicaciones. Los cambios no son cosméticos: **alteran el modelo de datos** y por
+tanto invalidan parte de lo que se escribió aquí.
+
+| Cambio | Dónde se detalla |
+| --- | --- |
+| `PostType` pasa a ser naturaleza institucional: `noticias`, `eventos`, `defensas`, `investigacion`, `convocatorias`. Se elimina `post`/`articulo`/`ensenanza` | §4.1, §5.3, §10.8 |
+| `category` deja de ser la naturaleza y pasa a ser el rubro de clasificación: 5 disciplinas + track de desarrollo profesional | §4.1, §5.3, §10.1 |
+| `researchArea` entra en `Post` y `?area=` entra en los filtros | §4.1, §4.2, §4.3 |
+| 38 áreas específicas + `general`, agrupadas en `<optgroup>` por rubro | §5.3 |
+| El filtro gana un control (`Área`): de 8 a 9 | §5.1, §6.3, §10.7 |
+| `imageUrl` pasa a `string \| null` y la tarjeta renderiza banda 16:9 sin hueco cuando es `null` | §5.5, §6.4, §10.12 |
+| Desaparecen `keywords`/`tags`: se derivan de hashtags del cuerpo | §5.5, §4.3 |
+| La tarjeta muestra `Categoría · Área` en vez de dos badges | §1, §5.5, §6.4 |
+| Los argumentos de §10.7, §10.8 y §10.12 se reescribieron porque sus cifras quedaron obsoletas | §10 |
+
+> [!WARNING]
+> **Alcance de esta revisión: fase estructural.** Fija modelo, filtros,
+> contratos, rutas y accesibilidad. **No** fija el acabado visual de cada vista:
+> tipografías exactas, tamaños en píxeles, espaciados y el comportamiento responsive
+> se decidirían al renderizar, y lo que aquí dice sobre ellos es indicativo. No
+> tomar estas cifras como píxeles exactos ni como cierre de diseño.
+
+Precedencia entre documentos, cuando discrepen: `wireframes_posts.md` manda
+sobre **modelo, CRUD, taxonomía y rutas**; este documento manda sobre **feed,
+filtros, contador y shell**. Ninguno pisa al otro.
 
 ## 1. Propósito y dirección visual
 
@@ -30,18 +60,23 @@ categoría.
   el botón "Nueva publicación" de la `Navbar`. El feed en sí es neutro
   (`--bg` + `--surface`); el color lo ponen los badges de estado, que son texto
   pequeño, no superficies grandes (§8.2).
-- **Jerarquía de la tarjeta:** categoría y tipo (insignias, 12px) → título
+- **Jerarquía de la tarjeta:** tipo de publicación (insignia, 12px) → título
   (serif `--font-display`, 20px) → autor y fecha (sans, 14px, `--text-muted`) →
-  extracto (sans, 16px, `--text-muted`, 3 líneas máximas).
+  categoría y área (sans, 14px, `--text-muted`) → extracto (sans, 16px,
+  `--text-muted`, 3 líneas máximas). Con imagen, la banda 16:9 va arriba de todo.
 - **Densidad.** Una tarjeta es un bloque compacto, `gap-4`, sin separadores
   horizontales entre tarjetas: el hueco hace ese trabajo.
 - **Tipografía.** Títulos de tarjeta en serif editorial (`--font-display`);
   metacarpeta, badges y controles en la sans del preflight.
 
-**Fuera de alcance por minimalismo:** imagen de portada en la tarjeta (§10.12),
-miniaturas, ReactionBar de "me gusta", compartir a redes, orden por relevancia o
-por título (§10.13), menú de acciones en la tarjeta (§10.5), contador de
-lecturas y botón "suscribirse".
+**Fuera de alcance por minimalismo:** miniaturas, ReactionBar de "me gusta",
+compartir a redes, orden por relevancia o por título (§10.13), menú de acciones
+en la tarjeta (§10.5), contador de lecturas y botón "suscribirse".
+
+> [!IMPORTANT]
+> La imagen de portada en la tarjeta **dejó de estar fuera de alcance**:
+> `wireframes_posts.md` §6.8 y §10.11 la incluyen, con banda 16:9, `alt` vacío y
+> **sin hueco ni caja de reserva** cuando `imageUrl` es `null`.
 
 ## 2. Layout del shell `(main)`
 
@@ -157,8 +192,9 @@ adaptación de escritorio es una rejilla, no un rediseño.
 │ [ Buscar publicaciones…    🔍] │ ← input type="search", label visible
 │ [ ⚙ Filtros (2)                ] │ ← toggler, abre el panel
 │ ┌────────────────────────────┐ │ ← panel colapsado / desplegado
-│ │ Categoría      [ Todas ▾ ] │ │
+│ │ Categoría      [ Todas ▾ ] │ │ ← con optgroup
 │ │ Tipo           [ Todos  ▾ ] │ │
+│ │ Área           [ Todas  ▾ ] │ │ ← 6 optgroup, no acoplado
 │ │ Autor          [ Todos  ▾ ] │ │
 │ │ Estado         [ Todos  ▾ ] │ │
 │ │ Desde [2026-03-01]         │ │
@@ -167,14 +203,16 @@ adaptación de escritorio es una rejilla, no un rediseño.
 │ └────────────────────────────┘ │
 │ 24 publicaciones               │ ← role="status"
 │ ┌────────────────────────────┐ │
-│ │ [Defensas] [Artículo] [✓]  │ │ ← badges: categoría · tipo · estado
+│ │ ▓▓▓ banda 16:9 de imagen ▓▓ │ │ ← solo si imageUrl; si no, no hay hueco
+│ │ [Defensas] #defensa #rii  ✓ │ │ ← badge tipo · chips · estado
 │ │ Cartelera de defensas de    │ │ ← serif, enlace (stretched)
-│ │ grado de marzo 2026         │ │
+│ │ grado, marzo 2026           │ │
 │ │ María Rivas · 12 mar 2026   │ │
+│ │ Matemáticas · Probabilidad  │ │ ← taxonomía
 │ │ El cronograma de …          │ │
 │ └────────────────────────────┘ │
 │ ┌────────────────────────────┐ │
-│ │ [Docencia] [Post] [🔒 Borrador]│
+│ │ [Borrador] #tesis   🔒 …   │ │ ← sin banda: sin imageUrl
 │ │ Quédate con el otro…        │ │
 │ │ María Rivas · 10 mar 2026   │ │
 │ │ Solo tú ves esta …          │ ← nota de visibilidad
@@ -194,18 +232,21 @@ adaptación de escritorio es una rejilla, no un rediseño.
 │ Publicaciones                                                        │
 │ Novedades, avisos y convocatorias de la facultad.                    │
 │ [ Buscar publicaciones                                    🔍        ] │
-│ [ Categoría ▾ ] [ Tipo ▾ ] [ Autor ▾ ] [ Estado ▾ ] [ Desde ] [Hasta ]│
+│ [ Categoría ▾ ] [ Tipo ▾ ] [ Área ▾ ]                               │
+│ [ Autor ▾ ] [ Estado ▾ ] [ Desde ] [ Hasta ]                        │
 │ [ Limpiar filtros ]                                                  │
 │ 24 publicaciones                                                     │
 │ ┌────────────────────────────┐ ┌────────────────────────────┐        │
-│ │ [Defensas] [Artículo] [✓] │ │ [Eventos] [Artículo] [✓]   │        │
-│ │ Cartelera de defensas de   │ │ Talleres de ointsoft…       │  2 col │
-│ │ grado de marzo 2026        │ │ Juan Pérez · 11 mar 2026   │        │
-│ │ María Rivas · 12 mar 2026  │ │ El tallerzol…               │        │
+│ │ ▓▓▓ banda 16:9 ▓▓▓         │ │ ▓▓▓ banda 16:9 ▓▓▓         │        │
+│ │ [Defensas] #defensa #rii ✓ │ │ [Eventos] #taller #rii  ✓   │  2 col │
+│ │ Cartelera de defensas de   │ │ Talleres de introducción   │        │
+│ │ grado, marzo 2026           │ │ Juan Pérez · 11 mar 2026   │        │
+│ │ María Rivas · 12 mar 2026  │ │ a la programación…        │        │
+│ │ Matemáticas · Probabilidad  │ │ Computación · Redes        │        │
 │ │ El cronograma de …         │ │                             │        │
 │ └────────────────────────────┘ └────────────────────────────┘        │
 │ ┌────────────────────────────┐ ┌────────────────────────────┐        │
-│ │ [Investigación] [Post] [✓] │ │ [Convocatorias] [Post] [✓] │        │
+│ │ [Investigación] #ensayo ✓  │ │ [Convocatorias] #becas  ✓  │        │
 │ └────────────────────────────┘ └────────────────────────────┘        │
 │ [ Cargar más ]                                                        │
 ├──────────────────────────────────────────────────────────────────────┤
@@ -214,8 +255,10 @@ adaptación de escritorio es una rejilla, no un rediseño.
 ```
 
 - **2 columnas** de tarjetas en `≥ 768px` y **3** en `≥ 1280px`.
-- Los filtros pasan a una **fila** de controles: buscador a ancho completo y los
-  seis selectores en `md:grid-cols-3 lg:grid-cols-6` debajo. **Sin sidebar** (§10.7).
+- Los filtros pasan a una **rejilla de 3 columnas**: buscador a ancho completo y
+  los selectores en `md:grid-cols-3` debajo. **Sin sidebar** (§10.7).
+- **Ocho** controles en total: buscador, `Categoría`, `Tipo`, `Área`, `Autor`,
+  `Estado` *(condicional)*, `Desde`, `Hasta`, más `Limpiar filtros`.
 - El `BottomNav` desaparece (`md:hidden`) y sus destinos ya están en la navbar.
 - `main` sin `pb-24`: el `pb` móvil se anula con `md:pb-0`.
 
@@ -258,16 +301,20 @@ publicaciones que filtrar no hay nada que afinar.
 
 ```
 │ ┌────────────────────────────┐ │
-│ │ [Docencia] [Artículo] [🔒 Borrador] │  ← --text-muted
+│ │ [Investigación]   🔒 Borrador │ ← badge tipo + aviso, --text-muted
 │ │ Quédate con el otro…        │ │
 │ │ María Rivas · 10 mar 2026   │ │
+│ │ Biología · Genética         │ │ ← taxonomía
+│ │ #tesis #metodologia        │ │ ← chips
 │ │ Solo tú ves esta            │  ← LockIcon + 14px --text-muted
 │ │ publicación.                │ │
 │ └────────────────────────────┘ │
 │ ┌────────────────────────────┐ │
-│ │ [Convocatorias] [Post] [🚫 Oculto] │  ← --warning
+│ │ [Convocatorias]   🚫 Oculto │ ← badge tipo + aviso, --warning
 │ │ Convocatoria de beca 2026   │ │
 │ │ María Rivas · 02 feb 2026   │ │
+│ │ Desarrollo profesional      │ │
+│ │ #beca #convocatoria        │ │
 │ │ Oculta por un administrador.│ │
 │ └────────────────────────────┘ │
 ```
@@ -294,16 +341,48 @@ Fijan lo que el `developer` implementa en `src/lib` y `src/data`. La lógica es
 ### 4.1 `Post` (`src/lib/types.ts`)
 
 ```ts
-/** Categoría institucional de una publicación. */
-export type PostCategory =
+/** Naturaleza institucional de una publicación. */
+export type PostType =
   | "noticias"
   | "eventos"
   | "defensas"
   | "investigacion"
   | "convocatorias";
 
-/** Naturaleza del contenido, según el MVP. */
-export type PostType = "post" | "articulo" | "ensenanza";
+/**
+ * Rubro de clasificación: cinco disciplinas de la FCT más el track de
+ * desarrollo profesional, que no es una disciplina. Ver
+ * `wireframes_posts.md` §4.1 y §10.15.
+ */
+export type PostCategory =
+  | "matematicas"
+  | "biologia"
+  | "quimica"
+  | "fisica"
+  | "computacion"
+  | "crecimiento-profesional";
+
+/**
+ * Área de investigación: 38 áreas más `general`, que existe en los seis rubros.
+ * Siempre pertenece al `category` de la publicación. Catálogo completo en
+ * `wireframes_posts.md` §4.2.
+ */
+export type ResearchArea =
+  | "general"
+  | "estadistica" | "probabilidad" | "optimizacion"
+  | "matematicas-aplicadas" | "modelado-matematico"
+  | "biotecnologia" | "bioquimica" | "genetica" | "microbiologia"
+  | "ecologia" | "bioinformatica"
+  | "quimica-analitica" | "quimica-organica" | "quimica-inorganica"
+  | "fisicoquimica" | "quimica-medioambiental"
+  | "fisica-computacional" | "fisica-de-materiales" | "astronomia"
+  | "fisica-nuclear" | "mecanica-de-fluidos"
+  | "inteligencia-artificial" | "aprendizaje-automatico" | "ciencia-de-datos"
+  | "desarrollo-web" | "ingenieria-software" | "redes-telecomunicaciones"
+  | "seguridad-informatica" | "sistemas-distribuidos" | "bases-de-datos"
+  | "computacion-grafica" | "robotica" | "arquitectura-computadores"
+  | "gestion-proyectos" | "liderazgo" | "emprendimiento"
+  | "comunicacion-profesional" | "etica-profesional";
 
 /** Visibilidad y estado editorial de una publicación. */
 export type PostVisibility = "publicado" | "borrador" | "oculto";
@@ -314,23 +393,38 @@ export type Post = {
   /** Cuerpo completo en Markdown. En fase estática se muestra como texto plano. */
   content: string;
   authorId: string;
-  category: PostCategory;
+  /** Naturaleza institucional. */
   type: PostType;
+  /** Disciplina, o el track de desarrollo profesional. */
+  category: PostCategory;
+  /** Área de investigación; pertenece a `category`. */
+  researchArea: ResearchArea;
   visibility: PostVisibility;
   /** ISO 8601. Es la clave de orden del feed: siempre descendente. */
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
-  /** Siempre `null` en fase estática: la imagen llega con el backend. */
+  /** `null` es un valor válido: la imagen es opcional. Ver `wireframes_posts.md` §10.11. */
   imageUrl: string | null;
 };
 ```
+
+> [!IMPORTANT]
+> `PostCategory` y `PostType` **intercambian sus conjuntos de valores** respecto
+> de la primera versión de este documento, y se añade `ResearchArea`. Es un
+> cambio incompatible: afecta a `src/data/posts.ts`, a `src/lib/filters.ts` y a
+> las pruebas del filtro. La especificación vigente del modelo y del CRUD está
+> en [`wireframes_posts.md`](wireframes_posts.md) §4; este documento describe
+> cómo se refleja en el feed.
 
 Decisiones que **no** son campos:
 
 - **No hay `excerpt`.** Se deriva con el `truncateText(content, 180)` que ya existe
   en `src/lib/format.ts`. Un campo duplicado puede desincronizarse del cuerpo.
 - **No hay `facultad`** (§10.1).
+- **No hay `keywords` ni `tags`.** Las palabras clave se derivan de los `#` del
+  cuerpo con `extractKeywords` (`wireframes_posts.md` §6.10). Un campo aparte
+  tendría dos fuentes de verdad y se desincronizaría del texto.
 - El **autor** no se embebe en `Post`: se resuelve por `authorId` contra el
   repositorio de usuarios, igual que hará la consulta SQL con un `JOIN`.
 
@@ -339,9 +433,13 @@ Decisiones que **no** son campos:
 ```ts
 export type PostFilters = {
   /** Palabra clave; se busca en título y cuerpo. Máx. 80 tras `trim`. */
-  q: string;
+  keyword: string;
+  /** Disciplina, o el track de desarrollo profesional. */
   category: PostCategory | "todas";
+  /** Naturaleza institucional. */
   type: PostType | "todos";
+  /** Área. `"general"` sí es un valor filtrable; no está acoplado a `category`. */
+  researchArea: ResearchArea | "todas";
   authorId: string | "todos";
   status: PostVisibility | "todos";
   /** `YYYY-MM-DD` o `null`. Inclusivo. */
@@ -351,9 +449,10 @@ export type PostFilters = {
 };
 
 export const DEFAULT_POST_FILTERS: PostFilters = {
-  q: "",
+  keyword: "",
   category: "todas",
   type: "todos",
+  researchArea: "todas",
   authorId: "todos",
   status: "todos",
   dateFrom: null,
@@ -367,6 +466,11 @@ export const POSTS_PAGE_SIZE = 6;
 `POSTS_PAGE_SIZE = 6` porque es múltiplo de 2 y de 3: cuadra la retícula de 1, 2
 y 3 columnas sin tarjetas huérfanas en el borde inferior.
 
+`researchArea` es una dimensión **independiente** de `category` dentro del
+filtro, aunque en el formulario sí sea dependiente: la razón está en
+`wireframes_posts.md` §10.3. Filtrar por `robotica` sin elegir categoría es
+legítimo, y por eso `general` es también un valor filtrable.
+
 ### 4.3 Correspondencia con la URL (`src/lib/filters.ts`)
 
 Los parámetros van **en español** porque son parte de la interfaz y se comparten
@@ -374,19 +478,29 @@ por enlace.
 
 | `PostFilters` | Parámetro | Valor inicial / vacío |
 | --- | --- | --- |
-| `q` | `q` | ausente si `""` |
+| `keyword` | `q` | ausente si `""` |
 | `category` | `categoria` | ausente si `"todas"` |
 | `type` | `tipo` | ausente si `"todos"` |
+| `researchArea` | `area` | ausente si `"todas"` |
 | `authorId` | `autor` | ausente si `"todos"` |
 | `status` | `estado` | ausente si `"todos"` |
 | `dateFrom` | `desde` | ausente si `null` |
 | `dateTo` | `hasta` | ausente si `null` |
 
+> [!WARNING]
+> `categoria` y `tipo` **conservan el nombre pero cambian de significado**:
+> `?categoria=computacion` es ahora una disciplina y `?tipo=defensas` una
+> naturaleza. Un enlace compartido con la semántica anterior
+> (`?categoria=noticias`) degrada a `"todas"` por la tolerancia de `fromSearchParams`
+> y devuelve la lista completa sin filtro: no rompe, pero tampoco filtra. Es
+> aceptable en una fase estructural y hay que tenerlo presente al publicar por
+> primera vez enlaces con la semántica nueva.
+
 Funciones puras del módulo:
 
 | Función | Firma | Nota |
 | --- | --- | --- |
-| `normalizeSearchText` | `(value: string) => string` | `trim`, minúsculas y **sin diacríticos** (§10.9) |
+| `normalizeSearchText` | `(value: string) => string` | `trim`, minúsculas y **sin diacríticos** (§10.9). Además **quita una `#` inicial**, para que `#defensa` encuentre lo mismo que `defensa` |
 | `fromSearchParams` | `(params: Record<string, string \| string[] \| undefined>) => PostFilters` | Descarta valores no válidos en vez de lanzar |
 | `toSearchParams` | `(filters: PostFilters) => URLSearchParams` | Omite los vacíos (§5.6) |
 | `applyFilters` | `(posts: Post[], filters: PostFilters) => Post[]` | Ordena por `publishedAt` **DESC** y filtra |
@@ -394,9 +508,13 @@ Funciones puras del módulo:
 | `isDateRangeValid` | `(filters: PostFilters) => boolean` | `dateFrom <= dateTo` |
 | `describeActiveFilters` | `(filters: PostFilters, authors: AuthorOption[]) => string` |(copy de §5.7) |
 
+`normalizeSearchText` quita la `#` inicial **después** de normalizar, y solo si
+es el primer carácter: `#defensa` → `defensa`, pero `c#` y `# 1` se dejan como
+están. Motivo en §10.9.
+
 ### 4.4 Visibilidad (`src/lib/visibility.ts`)
 
-`frontend-structure.md` §6 enuncia la regla en dos frases queConviven:
+`frontend-structure.md` §6 enuncia la regla en dos frases que conviven:
 `visible = publicado OR author_id === session`, y "`oculto` (admin): nadie
 excepto autor y admin". La regla completa que se implementa es:
 
@@ -490,14 +608,19 @@ etiqueta**. Todos los controles tienen label visible.
 
 | Control | Label visible | Tipo | `name` | Valores | Ayuda |
 | --- | --- | --- | --- | --- | --- |
-| Buscador | `Buscar publicaciones` | `search` + `enterKeyHint="search"` | `q` | texto libre, `maxLength={80}` | — |
-| Categoría | `Categoría` | `select` nativo | `categoria` | `Todas las categorías` + 5 categorías | — |
-| Tipo | `Tipo de publicación` | `select` nativo | `tipo` | `Todos los tipos` + 3 tipos | — |
+| Buscador | `Buscar publicaciones` | `search` + `enterKeyHint="search"` | `q` | texto libre, `maxLength={80}` | acepta `#etiqueta` |
+| Categoría | `Categoría` | `select` nativo con `optgroup` | `categoria` | `Todas las categorías` + 2 grupos: 5 disciplinas y 1 track | — |
+| Tipo | `Tipo de publicación` | `select` nativo | `tipo` | `Todos los tipos` + 5 naturalezas | — |
+| Área | `Área de investigación` | `select` nativo con `optgroup` | `area` | `Todas las áreas` + 6 grupos (uno por rubro) | — |
 | Autor | `Autor` | `select` nativo | `autor` | `Todos los autores` + `fullName` | — |
 | Estado | `Estado` | `select` nativo | `estado` | `Todos los estados` + 3 estados | **condicional** (§5.2) |
 | Desde | `Desde` | `date` | `desde` | `YYYY-MM-DD` | — |
 | Hasta | `Hasta` | `date` | `hasta` | `YYYY-MM-DD` | — |
 | Limpiar | — | `button` ghost `sm` | — | — | visible solo si `countActiveFilters > 0` |
+
+Son **9 controles**, no 8: `Área` entra como dimensión propia. `Categoría` y
+`Área` **no** se acoplan en el filtro, a diferencia del formulario, y la razón
+está en `wireframes_posts.md` §10.3.
 
 - Los `<select>` son **nativos** (`<select><option>`), sin listbox propio (§10.8).
   El borde usa `--text-muted` por el mismo motivo que los campos de
@@ -522,27 +645,73 @@ un estado vacío sin explicación, que se lee como bug. Es el mismo criterio que
 
 ### 5.3 Copy de los valores
 
+**Naturaleza institucional** — el `<select>` `Tipo de publicación`:
+
 | Grupo | Etiquetas |
 | --- | --- |
-| Categorías | `Noticias` · `Eventos` · `Defensas` · `Investigación` · `Convocatorias` |
-| Tipos | `Post` · `Artículo` · `Enseñanza` |
+| Tipos | `Noticias` · `Eventos` · `Defensas` · `Investigación` · `Convocatorias` |
+
+**Rubro de clasificación** — el `<select>` `Categoría`, con dos `<optgroup>`:
+
+| `<optgroup label>` | Etiquetas |
+| --- | --- |
+| `Disciplinas` | `Matemáticas` · `Biología` · `Química` · `Física` · `Computación` |
+| `Desarrollo profesional` | `Desarrollo profesional` |
+
+El último valor es el único de su grupo, y esa asimetría es intencionada: el
+`optgroup` existe para que se lea como track y no como departamento
+(`wireframes_posts.md` §10.15).
+
+**Área de investigación** — el `<select>` `Área`, con un `<optgroup>` por rubro y
+las áreas de §4.2 de `wireframes_posts.md`:
+
+| `<optgroup label>` | Etiquetas |
+| --- | --- |
+| `Matemáticas` | `General` · `Estadística` · `Probabilidad` · `Optimización` · `Matemáticas Aplicadas` · `Modelado Matemático` |
+| `Biología` | `General` · `Biotecnología` · `Bioquímica` · `Genética` · `Microbiología` · `Ecología` · `Bioinformática` |
+| `Química` | `General` · `Química Analítica` · `Química Orgánica` · `Química Inorgánica` · `Fisicoquímica` · `Química Medioambiental` |
+| `Física` | `General` · `Física Computacional` · `Física de Materiales` · `Astronomía` · `Física Nuclear` · `Mecánica de Fluidos` |
+| `Computación` | `General` · `Inteligencia Artificial` · `Aprendizaje Automático` · `Ciencia de Datos` · `Desarrollo Web` · `Ingeniería de Software` · `Redes y Telecomunicaciones` · `Seguridad Informática` · `Sistemas Distribuidos` · `Bases de Datos` · `Computación Gráfica` · `Robótica` · `Arquitectura de Computadores` |
+| `Desarrollo profesional` | `General` · `Liderazgo y Gestión de Equipos` · `Comunicación Profesional` · `Ética Profesional` · `Emprendimiento` · `Gestión de Proyectos` |
+
+Aquí los rótulos de `optgroup` **sí** coinciden con los valores del `select` de
+`Categoría`, para que quien tenga los dos desplegables abiertos relacione un
+grupo con el otro sin traducir de un vocabulario a otro.
+
+**Visibilidad**:
+
+| Grupo | Etiquetas |
+| --- | --- |
 | Estados | `Publicado` · `Borrador` · `Oculto` |
-| Estados (bis) | `Todos los estados` · `Todas las categorías` · `Todos los tipos` · `Todos los autores` |
+
+**Opciones de "todo"**:
+
+| Grupo | Etiquetas |
+| --- | --- |
+| Estados (bis) | `Todos los estados` · `Todas las categorías` · `Todos los tipos` · `Todas las áreas` · `Todos los autores` |
 
 Las etiquetas llevan **mayúscula inicial** en `<option>` y los valores internos van
-en minúsculas sin acentos (`noticias`, `defensas`): son claves de dominio, no
-texto.
+en minúsculas sin acentos (`noticias`, `defensas`, `computacion`): son claves de
+dominio, no texto. El valor legible de `crecimiento-profesional` es
+`Desarrollo profesional`, no el slug.
 
 ### 5.4 Copy del buscador y de los togglers
 
 | Elemento | Copy |
 | --- | --- |
-| Placeholder del buscador | `defensas, talleres, avisos…` |
+| Placeholder del buscador | `defensas, #rii, inteligencia artificial…` |
 | Toggler móvil | `Filtros` · `Filtros (2)` cuando hay filtros activos |
 | Botón limpiar | `Limpiar filtros` |
 
 El placeholder no promete nada: es un ejemplo de lo que la red publica, no una
-descripción de la función (esa está en el label).
+descripción de la función (esa está en el label). Incluye un `#` a propósito,
+porque las palabras clave son etiquetas en el cuerpo (`wireframes_posts.md`
+§6.10) y quien busca por hashtag es el caso de uso que no encuentra el título. La
+`#` inicial se ignora al buscar (§4.3), así que `#rii` y `rii` dan el mismo
+resultado.
+
+El contador del toggler cuenta `Categoría` y `Área` por separado: son dos
+dimensiones y limpiar una no limpia la otra.
 
 ### 5.5 Copy de la `PostCard`
 
@@ -551,11 +720,27 @@ descripción de la función (esa está en el label).
 | Título (enlace) | `{post.title}` |
 | Autor | `{givenName} {familyName}` + ` · @` + `{username}` |
 | Fecha | `formatDate(publishedAt)` → `12 mar 2026` |
+| Línea de taxonomía | `{Categoría}` + ` · ` + `{Área}` |
 | Extracto | `truncateText(content, 180)` |
+| Palabras clave | `#defensa` · `#rii` + `+{n}` |
 | Nota `borrador` | `Solo tú ves esta publicación.` |
 | Nota `oculto` | `Oculta por un administrador.` |
 
 Las dos notas van precedidas de `LockIcon` y son **texto**, no solo color (SC 1.4.1).
+
+**Badge de tipo.** El único badge es el de `type` (naturaleza): `Defensas`,
+`Eventos`, `Convocatorias`… El rótulo legible de `computacion` **no** va en
+badge, porque en la línea de taxonomía ya aparece y dos veces lo mismo es ruido.
+
+**Línea de taxonomía.** Es `Categoría · Área` con las etiquetas legibles, nunca
+los slugs: `Matemáticas · Modelado Matemático`. Para el track de desarrollo
+profesional se lee `Desarrollo profesional · Liderazgo`, que no finge que exista
+un departamento detrás (`wireframes_posts.md` §10.15).
+
+**Palabras clave.** Hasta 3 chips con la forma normalizada —sin tilde, en
+minúsculas, `#defensa`— y `+{n}` si sobran. Se muestran junto al badge, no en la
+línea de taxonomía: son más accionables que el área y quien busca por `#rii` las
+reconoce de un vistazo.
 
 ### 5.6 Reglas de la URL
 
@@ -564,8 +749,9 @@ Las dos notas van precedidas de `LockIcon` y son **texto**, no solo color (SC 1.
 - Si `toSearchParams` queda vacío, se navega a `pathname` **sin `?`** para no
   dejar una URL con la query vacía.
 - `fromSearchParams` es **tolerante**: un `?categoria=inventada` devuelve
-  `"todas"`; una fecha mal formada devuelve `null`. Compartir un enlace corrupto
-  degrada a "sin filtro", nunca a una pantalla en blanco.
+  `"todas"`; `?area=robotica` con un valor inexistente también; una fecha mal
+  formada devuelve `null`. Compartir un enlace corrupto degrada a "sin filtro",
+  nunca a una pantalla en blanco.
 - Se omite `scroll: false`: al cambiar los filtros la lista cambia de contenido y
   el usuario debe volver arriba a ver el H1 y el nuevo contador.
 
@@ -626,6 +812,15 @@ export type FilterBarProps = {
 - Búsqueda con rebote de **300 ms** (`useEffect` + `setTimeout`, limpiado en el
   cleanup). El `<select>` y las fechas se aplican **de inmediato**, sin rebote: son
   elecciones cerradas y el usuario espera un resultado, no teclea.
+- **9 controles**: buscador, `Categoría`, `Tipo`, `Área`, `Autor`, `Estado`
+  *(condicional)*, `Desde`, `Hasta`, `Limpiar filtros`.
+- `Categoría` y `Área` llevan `<optgroup>` (§5.3). `Área` **no** se deshabilita
+  ni se puebla según `Categoría`: son dimensiones independientes en el filtro,
+  aunque el formulario sí las acople (`wireframes_posts.md` §10.3).
+- Escritorio: los `<select>` en rejilla de 3 columnas con `size="sm"`. Con cinco
+  desplegables el ancho es el recurso escaso y la rejilla lo reparte mejor que
+  una fila.
+- Móvil: dentro del panel plegable que ya existe, sin cambios de estructura.
 - Panel móvil colapsado con `useState`:
   `button aria-expanded aria-controls="feed-filters-panel"` y
   `<div id="feed-filters-panel" hidden={!open}>`. **No** es un modal: no hay foco
@@ -639,6 +834,12 @@ export type FilterBarProps = {
   en lugar de recargar, y un `<form role="search">` da a los lectores de pantalla
   un punto de entrada reconocible.
 
+> [!WARNING]
+> El ancho de escritorio está **justo** con cinco desplegables más el buscador y
+> el rango de fechas. Hay que comprobarlo renderizado. Si desborda, el plan B
+> declarado es un único `<select>` que combine `Tipo` y `Área` en un desplegable
+> con `optgroup`, dejando cuatro (`wireframes_posts.md` §6.9).
+
 ### 6.4 `src/components/feed/post-card.tsx` — servidor
 
 ```ts
@@ -648,12 +849,25 @@ export type PostCardProps = {
 };
 ```
 
-- `<article>` con `border border-border rounded-lg bg-surface p-5`, `flex flex-col
-  gap-3`, `hover:border-primary focus-within:border-primary
+- `<article>` con `border border-border rounded-lg bg-surface`, `flex flex-col
+  gap-3`, `p-5`, `hover:border-primary focus-within:border-primary
   transition-colors`: el borde cambia con `:hover` **y** con `:focus-within`, así
-  que el estado de " pulsable" también aparece al tabular.
+  que el estado de " pulsable" también aparece al tabular. Con imagen el `p-5` se
+  sustituye por `p-0` arriba y `p-5` en el bloque de texto, para que la imagen
+  llegue al borde.
+- **Banda de imagen**, solo si `post.imageUrl !== null`:
+  `<div class="aspect-video overflow-hidden rounded-t-lg">` con
+  `<Image fill sizes="(max-width: 768px) 100vw, 33vw" alt="" />`. Es la **única**
+  banda de imagen que la tarjeta tiene; el `alt` va vacío porque es decorativa y
+  el título, justo debajo, ya nombra la publicación. Si `imageUrl` es `null`
+  **no se renderiza ningún hueco ni caja de reserva** (§10.12).
 - Fila de badges (izquierda) y, si el estado no es `publicado`, el aviso de
-  visibilidad (derecha, `ml-auto`).
+  visibilidad (derecha, `ml-auto`). El único badge es el de `type`.
+- **Línea de taxonomía** `Categoría · Área` en 14px `--text-muted`, con etiquetas
+  legibles y nunca los slugs (§5.5).
+- **Chips de palabras clave**, hasta 3 con la forma normalizada y `+{n}` si
+  sobran, junto al badge. Salen de `extractKeywords(post.content)`
+  (`wireframes_posts.md` §6.10).
 - **Título = enlace.** `<h3 class="font-display text-h3 text-text">` con un
   `<Link href={`/posts/${post.id}`}>` dentro, y el anclaje estirado con un
   pseudoelemento `after:absolute after:inset-0`, de modo que toda la tarjeta es
@@ -663,7 +877,8 @@ export type PostCardProps = {
 - El `article` es `relative` para que el `after` se posicione contra él.
 - Fecha con `formatDate` de `src/lib/format.ts`; extracto con `truncateText`.
 - Extracto con `line-clamp-3` para que las tarjetas tengan altura homogénea.
-- **Sin menú `⋯`** en esta fase (§10.5).
+- **Sin menú `⋯`** en esta fase (§10.5). `Eliminar` vive en el detalle
+  (`wireframes_posts.md` §5.6).
 - `author === null` (referencia rota en el mock) degrada a mostrar solo la fecha,
   sin `undefined` en pantalla.
 
@@ -755,7 +970,16 @@ export type BadgeProps = {
 Como `Field`, pero para `<select>`: label visible, `id` con `useId`, slots de
 ayuda y error, `aria-describedby` cableado, borde `--text-muted`. Se crea porque
 `Field` está tipado sobre `InputHTMLAttributes<HTMLInputElement>` y no admite
-`<select>`; extenderlo obligaría a loosenear ese tipo.
+`<select>`; extenderlo obligaría a relajar ese tipo.
+
+Acepta `<optgroup>` como `children`, que es lo que permite los dos selectores
+nuevos del filtro y el `Categoría` del formulario (`wireframes_posts.md` §5.3).
+El `optgroup` es nativo y no necesita código propio: llega en el `children` del
+`<select>` y el resto del contrato no cambia.
+
+También admite `disabled` nativo, que es lo que hace el `Área` del formulario
+mientras no haya categoría elegida (`wireframes_posts.md` §7.6). `disabled` real y
+no `aria-disabled`, porque un control deshabilitado no debe ser tabulable.
 
 ### 6.10 Iconos a añadir (`src/components/ui/icons.tsx` — modificar)
 
@@ -784,10 +1008,15 @@ pantalla:
 - **`type="search"`** con `enterKeyHint="search"`, `maxLength={80}` y label
   visible. Sin `aria-live` en el input: el contador ya anuncia el resultado, y
   anunciarlo dos veces es ruido.
-- **`<select>` nativos**: con seis opciones, un listbox propio añadiría
-  `aria-activedescendant` y navegación por flechas que reinventar mal. El nativo
-  ya cumple y en móvil da el selector del sistema.
-- **Badge de estado**: nunca solo color; la etiqueta textual siempre presente.
+- **`<select>` nativos**: con hasta 39 áreas y 6 categorías, un listbox propio
+  añadiría `aria-activedescendant` y navegación por flechas que reinventar mal.
+  El nativo ya cumple, en móvil da el selector del sistema y de paso expone los
+  `<optgroup>` a los lectores de pantalla.
+- **Badge de tipo**: nunca solo color; la etiqueta textual siempre presente.
+- **Taxonomía y chips**: `Categoría · Área` y los chips `#defensa` son texto real,
+  no iconos ni color, para que se lean al leerlos y se puedan copiar.
+- **Contraste del badge de tipo**: `--primary` sobre `--surface-muted` da
+  10.16:1 (AAA), verificado en §8.2.
 - **Objetivos táctiles ≥ 44px**: `min-h-11` en todos los controles,
   `min-h-14` en los destinos de la `BottomNav`, `44×44` en los botones de icono.
 - **Orden de tabulación** = orden visual, también dentro de la tarjeta: la
@@ -854,7 +1083,7 @@ Ratios calculados sobre los valores reales de `globals.css`.
 | Título de tarjeta `--text` sobre `--surface` | `#172033` / `#ffffff` | 16.27:1 | AAA |
 | Extracto y metacarpeta `--text-muted` sobre `--surface` | `#51607a` / `#ffffff` | 6.36:1 | AA |
 | Contador `--text-muted` sobre `--bg` | `#51607a` / `#f5f7fa` | 5.92:1 | AA |
-| Badge de categoría `--primary` sobre `--surface-muted` | `#1e3a5f` / `#eef1f6` | 10.16:1 | AAA |
+| Badge de tipo `--primary` sobre `--surface-muted` | `#1e3a5f` / `#eef1f6` | 10.16:1 | AAA |
 | Texto del CTA `--accent-foreground` sobre `--accent` | `#0b1220` / `#d97706` | 5.88:1 | AA |
 | Enlaces activos y "Cargar más" `--accent-teal` sobre `--surface` | `#0369a1` / `#ffffff` | 5.93:1 | AA |
 | Mensaje de error `--danger` sobre `--surface` | `#b91c1c` / `#ffffff` | 6.47:1 | AA |
@@ -908,6 +1137,22 @@ De ahí dos requisitos:
 
 ## 9. Guía de archivos para el `developer`
 
+> [!WARNING]
+> **Revisado contra `wireframes_posts.md`.** Este capítulo se escribió cuando el
+> feed era la única pantalla de publicaciones y el modelo de `Post` era el de
+> `wireframes.md`. Desde entonces `wireframes_posts.md` es la **fuente autoritativa**
+> del modelo y del CRUD, y este documento lo es solo de la pantalla del feed.
+>
+> Las filas marcadas con `⚠︎` **ya no son la referencia**: su contenido cambió y
+> la versión buena está en `wireframes_posts.md` §9. Se conservan aquí, sin
+> reescribir, como registro de lo que se decidió en su día; quien implemente debe
+> leer la tabla nueva primero y esta después.
+>
+> Precedencia, cuando los dos documentos discrepen:
+> `wireframes_posts.md` manda sobre el **modelo, el CRUD, la taxonomía y las
+> rutas**; `wireframes_feed.md` manda sobre el **feed, los filtros, el contador y
+> el shell**. Ninguno pisa al otro.
+
 ### 9.1 Archivos
 
 | Archivo                                              | Acción                  | Responsabilidad                                                                                             |
@@ -919,22 +1164,24 @@ De ahí dos requisitos:
 | `src/components/layout/navbar.tsx`                   | crear                  | Cliente. §2.2 y §6.1                                                                                           |
 | `src/components/layout/bottom-nav.tsx`               | crear                  | Cliente. §2.3 y §6.2                                                                                           |
 | `src/components/feed/feed-view.tsx`                  | crear                  | Cliente. §6.6: sesión, consulta, `visibleCount`, contador, estados                                             |
-| `src/components/feed/filter-bar.tsx`                 | crear                  | Cliente. §6.3                                                                                                  |
-| `src/components/feed/post-card.tsx`                  | crear                  | Servidor. §6.4                                                                                                  |
+| `src/components/feed/filter-bar.tsx`                 | crear                  | Cliente. §6.3 ⚠︎ **9 controles**: Taxonomía, rótulos y `optgroup` los fija `wireframes_posts.md` §5.3          |
+| `src/components/feed/post-card.tsx`                  | crear                  | Servidor. §6.4 ⚠︎ **Banda 16:9**, taxonomía y chips: los fija `wireframes_posts.md` §6.8                       |
 | `src/components/feed/load-more.tsx`                  | crear                  | Cliente. §6.5                                                                                                  |
 | `src/components/shared/empty-state.tsx`              | crear                  | Servidor. §6.7. Lo reutilizarán `/profile` y `/admin`                                                          |
 | `src/components/ui/badge.tsx`                        | crear                  | Servidor. §6.8                                                                                                  |
-| `src/components/ui/select-field.tsx`                 | crear                  | Servidor. §6.9                                                                                                  |
+| `src/components/ui/select-field.tsx`                 | crear                  | Servidor. §6.9 ⚠︎ Admite `<optgroup>` y `disabled`: `wireframes_posts.md` §6.9                                   |
 | `src/components/ui/icons.tsx`                        | modificar              | Añadir los 8 iconos de §6.10 con el patrón existente                                                          |
-| `src/lib/types.ts`                                   | modificar              | `Post`, `PostCategory`, `PostType`, `PostVisibility`, `PostFilters`, `DEFAULT_POST_FILTERS`, `POSTS_PAGE_SIZE` |
+| `src/lib/types.ts`                                   | modificar              | ⚠︎ **Modelo completo reescrito** en `wireframes_posts.md` §4.1: `PostType` pasa a ser naturaleza, `category` a rubro, entra `researchArea` |
 | `src/lib/visibility.ts`                              | crear                  | `canViewPost`, `filterVisiblePosts` (§4.4)                                                                     |
-| `src/lib/filters.ts`                                 | crear                  | Las 7 funciones puras de §4.3                                                                                 |
+| `src/lib/filters.ts`                                 | crear                  | Las 7 funciones puras de §4.3 ⚠︎ `normalizeSearchText` quita además la `#` inicial                           |
 | `src/lib/repositories/post-repository.ts`            | crear                  | Interfaz `PostRepository` + `PostPage` (§4.5)                                                                  |
 | `src/lib/repositories/post-repository.static.ts`     | crear                  | Implementación sobre `src/data/posts.ts`                                                                      |
 | `src/lib/repositories/user-repository.ts`            | crear                  | Interfaz `UserRepository` + `AuthorOption`                                                                     |
 | `src/lib/repositories/user-repository.static.ts`     | crear                  | Implementación sobre `src/data/users.ts`                                                                      |
-| `src/data/posts.ts`                                  | crear                  | 12 publicaciones (§4.6)                                                                                        |
+| `src/data/posts.ts`                                  | crear                  | 12 publicaciones (§4.6) ⚠︎ Fixtures según el modelo nuevo: `wireframes_posts.md` §4.6                            |
 | `src/data/users.ts`                                  | modificar              | Ampliar a 5 usuarios: 1 admin, 1 profesor, 3 estudiantes                                                      |
+| `src/lib/keywords.ts`                                | crear                  | ⚠︎ **Nuevo**: `extractKeywords`, normalización y tope de 12. `wireframes_posts.md` §6.10                        |
+| `src/lib/taxonomy.ts`                                | crear                  | ⚠︎ **Nuevo**: las 6 categorías, 39 áreas y sus etiquetas legibles. `wireframes_posts.md` §4.2                   |
 | `src/test/factories.ts`                              | crear                  | `makePost(overrides)` y `makeAuthor()`                                                                         |
 | `src/test/fixtures.ts`                               | crear                  | Datasets: feed mixto, escenario de filtros, escenario de visibilidad por rol                                   |
 | `src/test/render.tsx`                                | crear                  | `renderWithProviders(ui, { session })` envolviendo `SessionProvider` y los repositorios in-memory               |
@@ -950,12 +1197,13 @@ Primero la lógica pura, luego los componentes:
 
 | Test | Qué cubre |
 | --- | --- |
-| `src/lib/filters.test.ts` | Los 7 valores por defecto; `fromSearchParams` con parámetro ausente, repetido, inválido y con acentos; ida y vuelta `filters → params → filters`; `q` encuentra en título y en cuerpo; orden DESC estable para fechas del mismo día; `countActiveFilters`; `isDateRangeValid` en los tres casos límite (igual, invertido, ausente) |
+| `src/lib/filters.test.ts` | Los 7 valores por defecto incluido `researchArea`; `fromSearchParams` con parámetro ausente, repetido, inválido y con acentos; ida y vuelta `filters → params → filters` con `?area=`; `q` encuentra en título y en cuerpo; `#defensa` y `defensa` dan el mismo resultado; `categoria` y `tipo` inválidos degradan a `"todas"`/`"todos"` sin lanzar; orden DESC estable para fechas del mismo día; `countActiveFilters`; `isDateRangeValid` en los tres casos límite (igual, invertido, ausente) |
+| `src/lib/keywords.test.ts` | ⚠︎ **Nuevo**: extracción de hashtags del cuerpo, normalización sin tildes, deduplicado, descarte de `#` sueltos y de 1 carácter, tope de 12, cuerpo sin hashtags devuelve `[]` |
 | `src/lib/visibility.test.ts` | Las 9 combinaciones de §4.4; `borrador` de otro autor invisible para `admin`; autor visible en sus tres estados |
-| `src/data/posts.test.ts` | Todo `authorId` existe en `users.ts`; todo `category`/`type`/`visibility` es del dominio; fechas ISO parseables y ordenables |
+| `src/data/posts.test.ts` | Todo `authorId` existe en `users.ts`; todo `category`/`type`/`visibility` es del dominio; todo `researchArea` **pertenece a la categoría de su publicación**; ninguna combinación nueva es inválida (`investigacion` sin `investigacion` en la categoría); fechas ISO parseables y ordenables |
 | `src/lib/repositories/post-repository.contract.test.ts` | El mismo conjunto de aserciones contra la implementación estática y contra la in-memory: mismos `total`, mismo orden, mismas incidencias |
-| `src/components/feed/post-card.test.tsx` | Título como enlace a `/posts/[id]`; badges correctos por estado; notas "Solo tú ves…" y "Oculta por un administrador…"; autor ausente degrada sin `undefined` |
-| `src/components/feed/filter-bar.test.tsx` | Los 8 controles con su label; escribe en la URL con `replace`; debote de 300ms de la búsqueda con cleanup; selects sin debote; "Limpiar filtros" solo con filtros activos; "Filtros (2)"; `Estado` oculto cuando `showStatusFilter` es `false`; `hidden` y `aria-expanded` del panel |
+| `src/components/feed/post-card.test.tsx` | Título como enlace a `/posts/[id]`; badge de **tipo** correcto; banda 16:9 solo con `imageUrl` y **sin hueco cuando es `null`**; línea `Categoría · Área` con etiquetas legibles; chips `#defensa` y `+{n}`; notas "Solo tú ves…" y "Oculta por un administrador…"; autor ausente degrada sin `undefined` |
+| `src/components/feed/filter-bar.test.tsx` | Los **9** controles con su label; `<optgroup>` de `Categoría` y `Área`; `Área` **no** se acopla a `Categoría`; escribe en la URL con `replace` incluyendo `?area=`; debote de 300ms de la búsqueda con cleanup; selects sin debote; "Limpiar filtros" solo con filtros activos; "Filtros (2)"; `Estado` oculto cuando `showStatusFilter` es `false`; `hidden` y `aria-expanded` del panel |
 | `src/components/feed/feed-view.test.tsx` | `visibleCount` vuelve a `POSTS_PAGE_SIZE` al cambiar `filters`; "Cargar más" incrementa el `limit` de la consulta; contador en singular y plural; los 4 `EmptyState`; `role="alert"` del rango inválido |
 | `src/components/layout/navbar.test.tsx` | Enlaces de sección; `/admin` solo con rol `admin`; `aria-current="page"` en la sección activa; cerrar sesión |
 | `src/components/layout/bottom-nav.test.tsx` | 4 destinos con `admin`, 3 sin él; `aria-current`; `md:hidden` en la clase |
@@ -973,10 +1221,30 @@ Primero la lógica pura, luego los componentes:
 3. `src/components/feed/feed-view.tsx` es un archivo **nuevo** no previsto: el orquestador cliente del feed.
 4. La **sesión se resuelve en cliente** porque `StaticAuthGateway` usa `localStorage` (§10.16).
 5. Dos **valores de token** ajustados en modo claro (§8.2).
+6. `wireframes_posts.md` **reescribe el modelo de `Post`** (§4.1) respecto a `wireframes.md`:
+   `PostType` pasa de *formato* (`post`/`articulo`/`ensenanza`) a *naturaleza
+   institucional* (`noticias`/`eventos`/`defensas`/`investigacion`/`convocatorias`),
+   y `category` pasa de *naturaleza* a *rubro de clasificación*. Es un cambio de
+   modelo, no de interfaz, y es la razón de que las filas marcadas con `⚠︎` en
+   §9.1 apunten al documento nuevo.
+7. `wireframes_posts.md` **añade `researchArea`** a `Post` y `?area=` a los
+   filtros del feed (§4.3), más el parámetro derivado `research_area` que
+   `PostFilters` ya serializa (§4.2).
+8. `wireframes_posts.md` **cambia `imageUrl` de obligatorio a `string | null`**
+   (§10.12) y añade la banda 16:9 en `PostCard`.
+9. `wireframes_posts.md` **elimina los campos `keywords`/`tags`** del modelo y
+   deriva las palabras clave del cuerpo con hashtags (§6.10). No hay columna en
+   base de datos que mantener sincronizada.
+10. El feed **gana un noveno control** (`Área`): el argumento de §10.7 que lo
+    justificaba con "siete controles caben en una fila" dejó de ser cierto y se
+    reescribió el apartado en vez de dejar el argumento viejo.
+11. Se conservan los **nombres de los parámetros** `?categoria=` y `?tipo=` pese
+    al cambio de semántica, para no invalidar enlaces ya compartidos; un enlace
+    viejo degrada a "sin filtro" en lugar de romper (§4.3).
 
 ## 10. Decisiones de diseño y sus justificaciones
 
-### 10.1 `facultad` no es un filtro
+### 10.1 `facultad` no es un filtro, pero `Categoría` sí
 
 `implementation_base.md` §Feed lo lista entre los filtros. Se descarta: la
 plataforma es de **una sola facultad**, así que el filtro tendría siempre una
@@ -984,6 +1252,16 @@ opción y devolvería los mismos resultados. Añadirlo sería una casilla que pa
 filtrar y no filtra. Si la red crece a varias facultades, `facultad` deja de ser un
 `select` y pasa a ser una entidad con clave foránea en `Post`, que es un cambio de
 modelo, no de interfaz.
+
+> [!IMPORTANT]
+> Este apartado no cambió de postura, pero **el elemento que lo sobrevive sí**:
+> `Categoría` pasó de ser la naturaleza institucional (`Noticias`, `Eventos`) a
+> ser el **rubro de clasificación** (`Matemáticas`, `Biología`, `Computación`,
+> `Desarrollo profesional`), que **sí varía por publicación** y por tanto sí es
+> un filtro legítimo con columna e índice en `Post`. La razón por la que se
+> descartó `facultad` —"una sola opción, no filtra nada"— no aplica ya a
+> `Categoría`. El nombre del parámetro se conserva; su semántica no
+> (`wireframes_posts.md` §10.1).
 
 El esbozo de `/posts/[id]` (`wireframes.md` §3.2) muestra una línea "Facultad" en
 el detalle: esa línea puede seguir ahí como rótulo institucional **estático**
@@ -998,13 +1276,16 @@ explicación, que se lee como fallo. Se aplica el mismo criterio de
 
 ### 10.3 El estado de los filtros vive en la URL
 
-Elegido: **query params** (`?q=&categoria=&tipo=&autor=&estado=&desde=&hasta=`).
+Elegido: **query params** (`?q=&categoria=&tipo=&area=&autor=&estado=&desde=&hasta=`).
+`area` entra en la revisión de `wireframes_posts.md`: sin él no se puede filtrar
+por área ni compartir un enlace que la fije.
 
 - Un filtro en la URL es **compartible**: "mira estas defensas de marzo" es un
   enlace que se manda por correo o se pega en un chat.
 - El botón "atrás" del navegador deshace el filtro, como espera cualquiera.
-- Se traduce **1:1** a cláusulas `WHERE` con índices en `category`, `type` y
-  `published_at` (`wireframes.md` §4), sin capa de traducción adicional.
+- Se traduce **1:1** a cláusulas `WHERE` con índices en `category`, `type`,
+  `research_area` y `published_at` (`wireframes.md` §4), sin capa de traducción
+  adicional.
 - Se escribe con `router.replace`, no con `push`: filtrar no es navegar a una
   página nueva, y con `push` el historial se llenaría de entradas idénticas.
 - La página recibe los filtros ya parseados por props, así que **no** hace falta
@@ -1012,6 +1293,26 @@ Elegido: **query params** (`?q=&categoria=&tipo=&autor=&estado=&desde=&hasta=`).
 
 Descartado: estado local de React. Es más simple de escribir y perecioso de
 compartir, de recargar y de probar con el botón atrás.
+
+> [!IMPORTANT]
+> `categoria` y `tipo` **conservan el nombre y cambian de significado**: antes
+> `categoria` era la naturaleza (`noticias`) y `type` el formato (`post`); ahora
+> `tipo` es la naturaleza y `categoria` el rubro de clasificación. Un enlace
+> guardado con la semántica vieja degrada a "sin filtro" en vez de romper (§4.3).
+> No es motivo para renombrar los parámetros: se costuma compartir más un enlace
+> viejo que no funciona del todo que un enlace renombrado que hay que reenviar.
+
+**`Categoría` y `Área` no se acoplan en el filtro, pero sí en el formulario.** Es
+la asimetría más importante de esta pantalla:
+
+| Contexto | Comportamiento | Razón |
+| --- | --- | --- |
+| Filtro del feed | Independientes: se pueden combinar `?categoria=matematicas&area=probabilidad` | En una lista que ya está filtrada, cualquiera de las dos dimensiones puede pinsar por separado, y obligar a elegir la otra primero esconde combinaciones válidas |
+| Formulario de publicación | `Área` se habilita solo tras elegir `Categoría` y se puebla con las áreas de ese rubro | Al **crear**, las 39 áreas en un desplegable son ruido y es fácil guardar un área que no pertenece a la categoría; el orden elimina el error en origen |
+
+Escribirlo al revés no funciona: si el filtro acoplara, no se podría buscar "solo
+probabilidad" sin fijar antes la disciplina, que es exactamente lo que se quiere
+poder hacer.
 
 ### 10.4 "Cargar más" en vez de paginación numerada
 
@@ -1051,20 +1352,38 @@ el `⋯` cabe en la tarjeta sin tocar el resto del diseño.
 ### 10.7 Sin sidebar de filtros, ni en escritorio
 
 `wireframes.md` §5 contempla "sidebar opcional" a partir de 1024px. Se descarta:
-siete filtros en una columna lateral robaría el ancho que la columna de tarjetas
+ocho filtros en una columna lateral robaría el ancho que la columna de tarjetas
 usa, y obligaría a duplicar la lógica del panel móvil en un segundo componente.
-Con una fila de controles, la misma lista funciona en los tres breakpoints y solo
-se pliega en móvil. Con siete controles, además, la fila de escritorio cabe sin
-comprimir los targets táctiles.
+Con una rejilla de controles, la misma lista funciona en los tres breakpoints y
+solo se pliega en móvil.
+
+> [!WARNING]
+> Este argumento **ya no cierra** tal como estaba escrito. Cuando se decidió el
+> sidebar se justificaba con "siete controles en una fila de escritorio caben sin
+> comprimir los targets"; `Área` sube el recuento a ocho, y con el buscador a ancho
+> completo y dos fechas, una sola fila se pasa del límite de `1280px`. La
+> conclusión sigue siendo la misma —nada de sidebar— pero la **razón cambia**: ya
+> no es que la fila quepa sin tocar, sino que la rejilla de 3 columnas reparte
+> mejor el ancho y mantiene `min-h-11` en todos los controles. Si al renderizar se
+> desborda, el plan B declarado está en §6.3, no en volver al sidebar.
 
 ### 10.8 `<select>` nativos, no listbox propio
 
-Con seis categorías, tres tipos y tres estados, un listbox propio significa
-implementar `role="listbox"`, `aria-activedescendant`, navegación por flechas,
-`Home`/`End`, `Escape` y anuncio del valor seleccionado. El nativo ya lo cumple,
-es mejor en móvil (selector del sistema, suena cada opción con `aria-label`) y no
-depende de JS para abrirse. Se paga con algo de libertad estética; el diseño lo
-resuelve con borde `--text-muted` y alto de 44px.
+Con seis rubros, cinco naturalezas, tres estados, tres autores y hasta 39 áreas,
+un listbox propio significa implementar `role="listbox"`,
+`aria-activedescendant`, navegación por flechas, `Home`/`End`, `Escape` y anuncio
+del valor seleccionado. El nativo ya lo cumple, es mejor en móvil (selector del
+sistema, suena cada opción con `aria-label`) y no depende de JS para abrirse. Se
+paga con algo de libertad estética; el diseño lo resuelve con borde
+`--text-muted` y alto de 44px.
+
+> [!NOTE]
+> El argumento original ("seis opciones no justifican un listbox propio") era
+> débil y ya no aplica: con **39 áreas**, un `<select>` nativo se recorre con
+> teclado sin problema, y un listbox propio que las recorriera mal sería un
+> retroceso de accesibilidad, no una mejora. Los `<optgroup>` de §5.3 acotan la
+> lista a seis grupos legibles sin reimplementar nada. Los valores siguen siendo
+> claves de dominio en minúsculas sin acentos.
 
 ### 10.9 La búsqueda ignora mayúsculas y acentos
 
@@ -1090,15 +1409,33 @@ feed. Definirlos aquí evita que `/profile` y `/admin` los definan cada uno por 
 cuenta y que acabemos con dos navegaciones distintas. Cuando se especifique
 `/profile` solo habrá que aportar sus contenidos, no re-litigar la navegación.
 
-### 10.12 Sin imagen en la tarjeta, y sin marcador de posición
+### 10.12 La imagen entra, pero sin marcador de posición
+
+> [!IMPORTANT]
+> Este apartado **cambia de postura** respecto a la primera versión del
+> documento, que declaraba la imagen fuera de alcance. La decisión ahora es la
+> inversa: la imagen sí se renderiza. Lo que **no** cambia es el tratamiento del
+> `null`.
 
 `implementation_base.md` §Publicaciones pide imagen en la publicación, y
-`wireframes.md` §3.2 anticipa "Imagen: (bloqueo hasta backend)". En fase estática
-`imageUrl` es siempre `null`, así que la tarjeta **no** reserva hueco ni muestra
-un rectángulo gris: un marcador de posición es contenido falso que el
-lector de pantalla anuncia y que no aporta nada. Cuando llegue el backend, la
-imagen entra por arriba de los badges en `PostCard`; el diseño ya tiene sitio
-reservado en la retícula.
+`wireframes.md` §3.2 anticipaba "Imagen: (bloqueo hasta backend)". Ese bloqueo
+ya no aplica: el formulario de creación y edición acepta la URL de la imagen
+como campo opcional (`wireframes_posts.md` §5.8), de modo que `imageUrl` puede
+ser `null` **o** tener valor desde el primer día.
+
+Lo que se mantiene sin cambios es lo importante: la tarjeta **no reserva hueco**
+ni muestra un rectángulo gris cuando `imageUrl` es `null`. Un marcador de
+posición es contenido falso que el lector de pantalla anuncia y que no aporta
+nada. Con imagen, la banda va **encima de los badges**, en 16:9, con `alt`
+vacío porque es decorativa y el título ya nombra la publicación
+(`wireframes_posts.md` §10.11).
+
+> [!WARNING]
+> `imageUrl` era obligatorio en el modelo original y ahora es
+> `string | null`. Cualquier código que asuma `post.imageUrl.length` o que lo
+> concatene sin comprobar `null` romperá. Hay que buscar los tres usos
+> planificados —tarjeta, detalle y formulario— y ninguno puede asumir que
+> existe.
 
 ### 10.13 Un solo orden: fecha descendente
 

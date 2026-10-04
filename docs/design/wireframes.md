@@ -9,7 +9,9 @@ por área viven en archivos propios:
 | Bienvenida `/`                | [`wireframes_welcome.md`](wireframes_welcome.md) | [`welcome.md`](welcome.md)   |
 | Autenticación `/login`, `/register` | [`wireframes_auth.md`](wireframes_auth.md)   | [`auth.md`](auth.md)         |
 | Feed `/feed`                  | [`wireframes_feed.md`](wireframes_feed.md) | [`wireframes_feed.md`](wireframes_feed.md) (documento único) |
-| Posts, perfil, admin          | §3.2–§3.4 de este documento               | —                       |
+| Publicaciones `/posts/*`      | [`wireframes_posts.md`](wireframes_posts.md) | [`wireframes_posts.md`](wireframes_posts.md) (documento único) |
+| Detalle `/posts/[id]`         | [`wireframes_post_detail.md`](wireframes_post_detail.md) | [`wireframes_post_detail.md`](wireframes_post_detail.md) (documento único) |
+| Perfil, admin                 | §3.3–§3.4 de este documento               | —                       |
 
 > [!NOTE]
 > Los wireframes de la bienvenida se movieron a `wireframes_welcome.md` y los de
@@ -75,31 +77,34 @@ coincide con la sesión ficticia, y `oculto` también para el rol `admin`. La re
 completa, con su tabla de las nueve combinaciones, está en
 [`wireframes_feed.md`](wireframes_feed.md) §4.4.
 
-### 3.2 `/posts/new` y `/posts/[id]` (detalle)
+### 3.2 `/posts/new`, `/posts/[id]`, `/posts/[id]/edit` y `/posts/[id]/delete`
 
-```
-Crear:
-│ Título [_____________________]
-│ Categoría [▾] · Tipo [¿Puede editarse?]  ────── Desglose → Portapapeles
-│ Visibilidad [● Público] [○ Borrador]
-│ Contenido [_________________________
-│           _________________________]
-│ [ Guardar como borrador ] [ Publicar ]
-│ Imagen: (bloqueo hasta backend) "Disponible en integración"
+Especificación completa en [`wireframes_posts.md`](wireframes_posts.md) —diálogos
+de crear, editar y borrar sobre rutas reales, contratos de `Post` y
+`PostFormValues`, taxonomía de 6 rubros y 39 áreas, inventario y copy del
+formulario, accesibilidad, tokens y guía de archivos— y, para el detalle, en
+[`wireframes_post_detail.md`](wireframes_post_detail.md).
 
-Detalle /posts/[id]:
-│ [Categoría] [Artículo] [Publicado] [⋮]
-│ Título (serif display)
-│ Por [Autor] · 12 mar 2026 · Facultad
-│ ──────────
-│ contenido completo...
-│                                        (autor: [Editar] [Eliminar])
-│                                        (admin:  [Ocultar] [Eliminar])
-```
-
-**Edición** (`/posts/[id]/edit`): mismo layout que el formulario, con el campo
-**fecha de publicación** bloqueado (regla de `implementation_base.md`); el resto
-editable.
+> [!NOTE]
+> Este apartado pasó a ser un puntero por el mismo motivo que §3.1: el esbozo
+> ASCII que había aquí quedó contradicho por los documentos de detalle y habría
+> servido de guía al `developer` para construir lo equivocado.
+>
+> Lo que el esbozo tenía mal, para que no vuelva a colarse:
+>
+> | En el esbozo                                | Por qué ya no vale                                                                                     |
+> | ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+> | `Visibilidad [● Público] [○ Borrador]`       | No hay campo de visibilidad. La llevan dos botones, `Publicar` y `Guardar borrador` (`wireframes_posts.md` §5.1.1, §10.7) |
+> | `Imagen: (bloqueo hasta backend)`             | La imagen es opcional y **sí** se muestra, en la tarjeta y en el detalle (`wireframes_posts.md` §8.3, §10.12) |
+> | `[Categoría] [Artículo] [Publicado]` en el detalle | El badge es **solo el de tipo**; categoría y área van como línea de texto (`wireframes_posts.md` §9.4) |
+> | `[⋮]` en el detalle y en la tarjeta          | No hay menú de acciones: en la tarjeta porque no habría backend que ejecutar, y en el detalle porque las acciones viven ya en `/posts/[id]` (`wireframes_feed.md` §10.5) |
+> | `Categoría` y `Tipo` en la misma fila del formulario | Son dimensiones distintas y su semántica de URL es distinta (`wireframes_posts.md` §10.2); además entra `Área`, y son 7 controles |
+> | `Desglose → Portapapeles`                    | No hay campo de texto en el formulario; el contenido es un único campo de 30 a 4000 caracteres |
+>
+> **Edición** (`/posts/[id]/edit`): mismo formulario de 7 controles, con la fecha de
+> publicación visible y **deshabilitada** (`wireframes_posts.md` §5.2, §10.8).
+> El detalle vive en su propio documento porque es una página de lectura, no un
+> diálogo.
 
 ### 3.3 `/profile/[username]`
 

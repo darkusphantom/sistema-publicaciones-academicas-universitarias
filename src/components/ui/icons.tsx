@@ -239,3 +239,12 @@ export function CalendarIcon({ className }: IconProps) {
   );
 }
 
+
+export function XIcon({ className }: IconProps) {
+  return (
+    <svg {...ICON_BASE_PROPS} width={20} height={20} className={className}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
+}

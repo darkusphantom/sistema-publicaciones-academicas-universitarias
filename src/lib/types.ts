@@ -38,8 +38,11 @@ export type AuthResult =
 
 // ─── Feed domain types ────────────────────────────────────────────────────────
 
-/** Institutional category of a publication. */
-export type PostCategory =
+/**
+ * Nature of the content (Naturaleza institucional).
+ */
+export type PostType =
+  | "post" | "articulo" | "ensenanza"
   | "noticias"
   | "eventos"
   | "defensas"
@@ -47,10 +50,36 @@ export type PostCategory =
   | "convocatorias";
 
 /**
- * Nature of the content according to the MVP.
- * Matches the values expected by filters and URL params.
+ * Classification Realm / Disciplines (Rubro de clasificación).
+ * Five disciplines of the FCT plus one professional development track.
  */
-export type PostType = "post" | "articulo" | "ensenanza";
+export type PostCategory =
+  | "matematicas"
+  | "biologia"
+  | "quimica"
+  | "fisica"
+  | "computacion"
+  | "crecimiento-profesional";
+
+/**
+ * Specific research area within a category. 38 areas + "general".
+ */
+export type ResearchArea =
+  | "general"
+  | "estadistica" | "probabilidad" | "optimizacion"
+  | "matematicas-aplicadas" | "modelado-matematico"
+  | "biotecnologia" | "bioquimica" | "genetica" | "microbiologia"
+  | "ecologia" | "bioinformatica"
+  | "quimica-analitica" | "quimica-organica" | "quimica-inorganica"
+  | "fisicoquimica" | "quimica-medioambiental"
+  | "fisica-computacional" | "fisica-de-materiales" | "astronomia"
+  | "fisica-nuclear" | "mecanica-de-fluidos"
+  | "inteligencia-artificial" | "aprendizaje-automatico" | "ciencia-de-datos"
+  | "desarrollo-web" | "ingenieria-software" | "redes-telecomunicaciones"
+  | "seguridad-informatica" | "sistemas-distribuidos" | "bases-de-datos"
+  | "computacion-grafica" | "robotica" | "arquitectura-computadores"
+  | "gestion-proyectos" | "liderazgo" | "emprendimiento"
+  | "comunicacion-profesional" | "etica-profesional";
 
 /**
  * Visibility and editorial state of a publication.
@@ -62,8 +91,6 @@ export type PostVisibility = "publicado" | "borrador" | "oculto";
 
 /**
  * Represents a single publication in the platform.
- * The `content` field holds the full body in Markdown; during the static phase
- * it is displayed as plain text via `truncateText`.
  */
 export type Post = {
   id: string;
@@ -71,16 +98,33 @@ export type Post = {
   /** Full body in Markdown. Shown as plain text in the static phase. */
   content: string;
   authorId: string;
-  category: PostCategory;
   type: PostType;
+  category: PostCategory;
+  researchArea: ResearchArea;
   visibility: PostVisibility;
   /** ISO 8601. Primary sort key for the feed (always descending). */
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
-  /** Always `null` in the static phase; the image arrives with the backend. */
+  /** Optional image banner. */
   imageUrl: string | null;
 };
+
+/**
+ * Values for the post creation/editing form.
+ * Visibility is omitted because it is dictated by the submit button pressed.
+ */
+export type PostFormValues = {
+  title: string;
+  content: string;
+  imageUrl: string;
+  type: PostType;
+  category: PostCategory;
+  researchArea: ResearchArea;
+};
+
+/** Discriminates which submit button was pressed. */
+export type PostSubmitIntent = "publicar" | "guardar-borrador";
 
 /**
  * Active filter state for the feed.
@@ -91,6 +135,7 @@ export type PostFilters = {
   keyword: string;
   category: PostCategory | "todas";
   type: PostType | "todos";
+  researchArea: ResearchArea | "todas";
   authorId: string | "todos";
   status: PostVisibility | "todos";
   /** `YYYY-MM-DD` or `null`. Inclusive lower bound. */
@@ -104,6 +149,7 @@ export const DEFAULT_POST_FILTERS: PostFilters = {
   keyword: "",
   category: "todas",
   type: "todos",
+  researchArea: "todas",
   authorId: "todos",
   status: "todos",
   dateFrom: null,
@@ -112,14 +158,11 @@ export const DEFAULT_POST_FILTERS: PostFilters = {
 
 /**
  * Page size for the "Cargar más" button.
- * Must be a multiple of 2 and 3 so the 1/2/3-column grid never has orphaned
- * cards at the bottom edge.
  */
 export const POSTS_PAGE_SIZE = 6;
 
 /**
  * Lightweight author data used in filter dropdowns and card metadata.
- * Resolved from `authorId` against the user repository.
  */
 export type AuthorOption = {
   id: string;

@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/footer";
 /** Props accepted by {@link MainLayout}. */
 type MainLayoutProps = {
   children: ReactNode;
+  modal: ReactNode;
 };
 
 /**
@@ -25,7 +26,7 @@ type MainLayoutProps = {
  * @param props - Layout props.
  * @returns The full authenticated shell.
  */
-export default function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout({ children, modal }: MainLayoutProps) {
   return (
     <>
       {/* Skip to content link — first focusable element */}
@@ -51,6 +52,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
           <Footer />
         </div>
+        {modal}
       </SessionProvider>
     </>
   );

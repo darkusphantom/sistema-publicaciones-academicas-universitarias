@@ -8,8 +8,10 @@ import type {
   PostPage,
   PostRepository,
   UserRepository,
+  CreatePostInput,
+  UpdatePostInput,
 } from "./post-repository";
-import type { PostFilters, Session } from "@/lib/types";
+import type { PostFilters, Session, PostVisibility } from "@/lib/types";
 
 /**
  * Static implementation of {@link PostRepository}.
@@ -54,6 +56,67 @@ export class StaticPostRepository implements PostRepository {
    */
   async findById(id: string): Promise<Post | null> {
     return mockPosts.find((p) => p.id === id) ?? null;
+  }
+
+  async create(input: CreatePostInput, session: Session): Promise<Post> {
+    const now = new Date().toISOString();
+    const newPost: Post = {
+      id: `p-${mockPosts.length + 1}`,
+      authorId: session.user.id,
+      ...input,
+      publishedAt: input.visibility === "publicado" ? now : "9999-12-31T23:59:59Z",
+      createdAt: now,
+      updatedAt: now,
+    };
+    mockPosts.unshift(newPost); // prepend to have it first
+    return newPost;
+  }
+
+  async update(id: string, patch: UpdatePostInput, session: Session): Promise<Post> {
+    const idx = mockPosts.findIndex((p) => p.id === id);
+    if (idx === -1) throw new Error("Post not found");
+
+    const post = mockPosts[idx];
+    if (post.authorId !== session.user.id && session.user.role !== "admin") {
+      throw new Error("Unauthorized");
+    }
+
+    const updated = {
+      ...post,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+    mockPosts[idx] = updated;
+    return updated;
+  }
+
+  async remove(id: string, session: Session): Promise<void> {
+    const idx = mockPosts.findIndex((p) => p.id === id);
+    if (idx === -1) throw new Error("Post not found");
+
+    const post = mockPosts[idx];
+    if (post.authorId !== session.user.id && session.user.role !== "admin") {
+      throw new Error("Unauthorized");
+    }
+
+    mockPosts.splice(idx, 1);
+  }
+
+  async setVisibility(id: string, visibility: PostVisibility, session: Session): Promise<Post> {
+    if (session.user.role !== "admin") {
+      throw new Error("Unauthorized");
+    }
+
+    const idx = mockPosts.findIndex((p) => p.id === id);
+    if (idx === -1) throw new Error("Post not found");
+
+    const updated = {
+      ...mockPosts[idx],
+      visibility,
+      updatedAt: new Date().toISOString(),
+    };
+    mockPosts[idx] = updated;
+    return updated;
   }
 }
 

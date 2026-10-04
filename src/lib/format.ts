@@ -57,3 +57,23 @@ export function truncateText(text: string, maxLength = 160): string {
 
   return `${text.slice(0, maxLength).trimEnd()}…`;
 }
+
+/**
+ * Extracts hashtags from a text and normalizes them (lowercase, no accents).
+ *
+ * @param content - The text to extract hashtags from.
+ * @returns Array of unique, normalized hashtags (including the `#`).
+ * @complexity O(n) — single regex match pass over the string.
+ */
+export function extractKeywords(content: string): string[] {
+  const matches = content.match(/#[a-zA-Z0-9_\u00C0-\u017F]+/g) || [];
+  
+  const normalized = matches.map((tag) =>
+    tag
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+  );
+
+  return Array.from(new Set(normalized));
+}

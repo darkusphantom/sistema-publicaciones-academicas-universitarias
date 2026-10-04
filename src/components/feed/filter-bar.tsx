@@ -143,7 +143,7 @@ export function FilterBar({
         {...(!panelOpen && { hidden: true })}
         className="md:block"
       >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {/* Category */}
           <SelectField
             label="Categoría"
@@ -153,15 +153,21 @@ export function FilterBar({
               onChange({
                 ...filters,
                 category: e.target.value as PostFilters["category"],
+                researchArea: "todas", // Reset area when category changes
               })
             }
           >
             <option value="todas">Todas las categorías</option>
-            <option value="noticias">Noticias</option>
-            <option value="eventos">Eventos</option>
-            <option value="defensas">Defensas</option>
-            <option value="investigacion">Investigación</option>
-            <option value="convocatorias">Convocatorias</option>
+            <optgroup label="Disciplinas">
+              <option value="matematicas">Matemáticas</option>
+              <option value="biologia">Biología</option>
+              <option value="quimica">Química</option>
+              <option value="fisica">Física</option>
+              <option value="computacion">Computación</option>
+            </optgroup>
+            <optgroup label="Desarrollo profesional">
+              <option value="crecimiento-profesional">Desarrollo profesional</option>
+            </optgroup>
           </SelectField>
 
           {/* Type */}
@@ -180,6 +186,94 @@ export function FilterBar({
             <option value="post">Post</option>
             <option value="articulo">Artículo</option>
             <option value="ensenanza">Enseñanza</option>
+            <option value="noticias">Noticias</option>
+            <option value="eventos">Eventos</option>
+            <option value="defensas">Defensas</option>
+            <option value="investigacion">Investigación</option>
+            <option value="convocatorias">Convocatorias</option>
+          </SelectField>
+
+          {/* Research Area */}
+          <SelectField
+            label="Área de investigación"
+            name="area"
+            value={filters.researchArea}
+            onChange={(e) =>
+              onChange({
+                ...filters,
+                researchArea: e.target.value as PostFilters["researchArea"],
+              })
+            }
+          >
+            <option value="todas">Todas las áreas</option>
+            {(filters.category === "todas" || filters.category === "matematicas") && (
+              <optgroup label="Matemáticas">
+                <option value="general">General</option>
+                <option value="estadistica">Estadística</option>
+                <option value="probabilidad">Probabilidad</option>
+                <option value="optimizacion">Optimización</option>
+                <option value="matematicas-aplicadas">Matemáticas Aplicadas</option>
+                <option value="modelado-matematico">Modelado Matemático</option>
+              </optgroup>
+            )}
+            {(filters.category === "todas" || filters.category === "biologia") && (
+              <optgroup label="Biología">
+                <option value="general">General</option>
+                <option value="biotecnologia">Biotecnología</option>
+                <option value="bioquimica">Bioquímica</option>
+                <option value="genetica">Genética</option>
+                <option value="microbiologia">Microbiología</option>
+                <option value="ecologia">Ecología</option>
+                <option value="bioinformatica">Bioinformática</option>
+              </optgroup>
+            )}
+            {(filters.category === "todas" || filters.category === "quimica") && (
+              <optgroup label="Química">
+                <option value="general">General</option>
+                <option value="quimica-analitica">Química Analítica</option>
+                <option value="quimica-organica">Química Orgánica</option>
+                <option value="quimica-inorganica">Química Inorgánica</option>
+                <option value="fisicoquimica">Fisicoquímica</option>
+                <option value="quimica-medioambiental">Química Medioambiental</option>
+              </optgroup>
+            )}
+            {(filters.category === "todas" || filters.category === "fisica") && (
+              <optgroup label="Física">
+                <option value="general">General</option>
+                <option value="fisica-computacional">Física Computacional</option>
+                <option value="fisica-de-materiales">Física de Materiales</option>
+                <option value="astronomia">Astronomía</option>
+                <option value="fisica-nuclear">Física Nuclear</option>
+                <option value="mecanica-de-fluidos">Mecánica de Fluidos</option>
+              </optgroup>
+            )}
+            {(filters.category === "todas" || filters.category === "computacion") && (
+              <optgroup label="Computación">
+                <option value="general">General</option>
+                <option value="inteligencia-artificial">Inteligencia Artificial</option>
+                <option value="aprendizaje-automatico">Aprendizaje Automático</option>
+                <option value="ciencia-de-datos">Ciencia de Datos</option>
+                <option value="desarrollo-web">Desarrollo Web</option>
+                <option value="ingenieria-software">Ingeniería de Software</option>
+                <option value="redes-telecomunicaciones">Redes y Telecomunicaciones</option>
+                <option value="seguridad-informatica">Seguridad Informática</option>
+                <option value="sistemas-distribuidos">Sistemas Distribuidos</option>
+                <option value="bases-de-datos">Bases de Datos</option>
+                <option value="computacion-grafica">Computación Gráfica</option>
+                <option value="robotica">Robótica</option>
+                <option value="arquitectura-computadores">Arquitectura de Computadores</option>
+              </optgroup>
+            )}
+            {(filters.category === "todas" || filters.category === "crecimiento-profesional") && (
+              <optgroup label="Desarrollo profesional">
+                <option value="general">General</option>
+                <option value="gestion-proyectos">Gestión de Proyectos</option>
+                <option value="liderazgo">Liderazgo y Gestión de Equipos</option>
+                <option value="emprendimiento">Emprendimiento</option>
+                <option value="comunicacion-profesional">Comunicación Profesional</option>
+                <option value="etica-profesional">Ética Profesional</option>
+              </optgroup>
+            )}
           </SelectField>
 
           {/* Author */}
