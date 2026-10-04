@@ -110,30 +110,53 @@ estructura, que es la que comparten los tres diálogos:
 ### 2.2 El modal vive sobre una ruta real
 
 Los diálogos se montan en un slot `@modal` del layout `(main)`, no sobre la
-página actual:
+página actual. Para que eso funcione hacen falta **dos** cosas: las rutas reales
+y los interceptores `(.)`.
 
 ```
 src/app/(main)/
 ├── layout.tsx                    → renderiza {children} + {modal}
 ├── @modal/
 │   ├── default.tsx               → devuelve null
-│   └── posts/
+│   └── (.)posts/                 ← marcador de intercepción
 │       ├── new/page.tsx          → <PostFormModal mode="create">
 │       └── [id]/
 │           ├── edit/page.tsx     → <PostFormModal mode="edit" postId>
 │           └── delete/page.tsx   → <ConfirmDeleteModal postId>
+└── posts/                        ← rutas reales, sin marcador
+    ├── new/page.tsx              → misma UI, sin backdrop
+    └── [id]/
+        ├── page.tsx              → detalle (§6.7 de wireframes_post_detail.md)
+        ├── edit/page.tsx         → misma UI, sin backdrop
+        └── delete/page.tsx       → misma UI, sin backdrop
 ```
+
+> [!IMPORTANT]
+> **El `(.)` no es opcional.** Sin él, `@modal/posts/new/page.tsx` no intercepta
+> nada: un slot paralelo se renderiza cuando la ruta del segmento implícito
+> (`children`) resuelve, y `posts/new` solo resuelve si existe
+> `posts/new/page.tsx`. Si falta ese archivo, `/posts/new` da **404** y el modal
+> no llega a pintarse nunca.
+>
+> Con `(.)` el comportamiento es el que pide este documento: una navegación
+> suave desde `/feed` a `/posts/new` muestra el diálogo con **el feed debajo, sin
+> descargarse**; una carga directa de `/posts/new` —enlace compartido, pestaña
+> nueva, `F5`— cae en `posts/new/page.tsx` y muestra la misma interfaz sin
+> backdrop. Las dos rutas existen y las dos funcionan, y el botón atrás lleva al
+> feed en ambos casos.
 
 Cuando `@modal` devuelve `null`, `children` ocupa el ancho completo. Cuando hay
 una página en `@modal`, `children` se renderiza **debajo y atenuado**, como
-fondo. `src/app/(main)/layout.tsx` (ya existente) pasa a envolver el contenido en
-el contenedor del backdrop y a renderizar `{modal}` después de `{children}`.
+fondo. `src/app/(main)/layout.tsx` (ya existente) tiene que envolver el
+contenido de `{children}` en el `div` del backdrop y renderizar `{modal}` como
+hermano **dentro** del mismo contenedor, no fuera.
 
 > [!IMPORTANT]
 > Las rutas **existen** aunque el contenido sea un diálogo. `/posts/new` es el
-> destino del `EmptyState` del feed (`wireframes_feed.md` §5.7) y `/posts/[id]/edit`
-> es el destino del botón `Editar` del detalle. Si el modal fuera un estado en
-> memoria habría que cambiar esos enlaces y se perdería el botón atrás (§10.1).
+> destino del `EmptyState` del feed (`wireframes_feed.md` §5.7), del CTA del
+> navbar y de la bottom-nav; `/posts/[id]` es el destino del título de cada
+> tarjeta. Si el modal fuera un estado en memoria habría que cambiar esos enlaces
+> y se perdería el botón atrás (§10.1).
 
 ## 3. Wireframes
 
@@ -770,16 +793,27 @@ Reglas:
   al detalle en modo crear, y a `/feed` en modo borrador.
 - `imageUrl` vacío se envía como `null`, nunca como `""`.
 
-### 6.7 `src/components/feed/post-detail.tsx` — servidor
+### 6.7 `src/components/feed/post-detail.tsx` — cliente
 
-La vista `/posts/[id]`. Ruta ya reservada en `frontend-structure.md:63`. Este
-documento especifica **solo** su cabecera con los botones de acción (§5.6) y su
-imagen principal (§8.3); el resto del cuerpo no se especifica aquí.
+La vista `/posts/[id]`. Ruta ya reservada en `frontend-structure.md:63`.
 
-Es servidor. Los tres botones no son enlaces: abren diálogos. Cada uno es un
-`<Link>` a la ruta del diálogo en `@modal`, de modo que funcionan con teclado,
-con el botón atrás y con abrir en pestaña nueva. `Eliminar` es un `Link` a
-`/posts/[id]/delete` con `text-danger`, **no** un `button` con `onClick`.
+**El cuerpo de esta vista está especificado en
+[`wireframes_post_detail.md`](wireframes_post_detail.md)**, que existe porque
+este documento dejaba el cuerpo abierto. Este documento manda sobre la cabecera,
+los botones de acción (§5.6) y la imagen principal (§8.3).
+
+Corrección de este documento: **no es un Server Component.** La sesión vive en
+`localStorage` y la resuelve `SessionProvider`, que es `"use client"`
+(`StaticAuthGateway.getSession()` devuelve `null` en servidor). Como §5.6 exige
+botones que dependen del rol, un componente de servidor no puede decidir qué
+pintar. El reparto es: `posts/[id]/page.tsx` es servidor y hace `findById` +
+`notFound()` + resuelve el autor; `post-detail.tsx` es cliente y aplica
+`canViewPost`. Es el mismo reparto que ya usa el feed.
+
+Los tres botones no son `<button onClick>`: cada uno es un `<Link>` a la ruta del
+diálogo en `@modal`, de modo que funcionan con teclado, con el botón atrás y con
+abrir en pestaña nueva. `Eliminar` es un `Link` a `/posts/[id]/delete` con
+`text-danger`, **no** un `button` con `onClick`.
 
 ### 6.8 `src/components/feed/post-card.tsx` — modificar
 
@@ -845,10 +879,19 @@ porque no hay espacio delante, y `https://ejemplo.com#seccion` tampoco.
 
 ### 6.11 `src/components/ui/icons.tsx` — modificar
 
-Añade `ImageIcon` y `TagIcon` siguiendo el patrón de los ocho existentes: SVG
-propio, 24×24, `stroke="currentColor"`, `stroke-width={1.75}`, `aria-hidden="true"`,
+Añade `TagIcon` siguiendo el patrón de los ocho existentes: SVG propio, 24×24,
+`stroke="currentColor"`, `stroke-width={1.75}`, `aria-hidden="true"`,
 `focusable="false"`. Sin emoji, tampoco en los wireframes de este documento.
 `AlertTriangleIcon` y `XIcon` ya existen y son los que usan §3.4 y §2.1.
+
+`ArrowLeftIcon` lo añade el detalle (`wireframes_post_detail.md` §4.1) para el
+enlace de vuelta. No reutilizar `ChevronLeftIcon` ni `ChevronRightIcon`: esos dos
+son los controles del carrusel de `wireframes_welcome.md` y un chevron aquí se
+leería como "anterior" dentro de una secuencia, no como "salir a la lista".
+
+**`ImageIcon` no se crea.** No hay ninguna acción sobre la imagen: la banda es
+decorativa con `alt=""` y el título ya la nombra (§10.11). Un icono sin consumidor
+es una decisión que dentro de seis meses nadie recuerda haber tomado.
 
 ## 7. Accesibilidad (WCAG 2.2 AA)
 
