@@ -1,6 +1,6 @@
 ---
 name: project-context
-description: Contexto obligatorio del proyecto Red FaCyT. Cargar SIEMPRE al inicio de cualquier tarea, antes de leer o escribir código, para conocer la arquitectura (frontend-structure.md, inmutable), el estado real de implementación (progress.md, dinámico), el formato de diseño (docs/design/*) y las reglas de documentación post-implementación. Use cuando vayas a implementar, revisar, testear, diseñar, desplegar o gestionar el tablero del proyecto.
+description: Contexto obligatorio del proyecto Red FaCyT. Cargar SIEMPRE al inicio de cualquier tarea, antes de leer o escribir código, para conocer la arquitectura (frontend-structure.md, inmutable), el estado real de implementación (progress.md, dinámico), el formato de diseño (docs/design/*), las reglas de seguridad (AGENTS.md §6 y docs/security/crown-jewels.md) y las reglas de documentación post-implementación. Use cuando vayas a implementar, revisar, testear, diseñar, desplegar o gestionar el tablero del proyecto.
 ---
 
 # Contexto de proyecto — Red FaCyT
@@ -13,12 +13,15 @@ Antes de **implementar, revisar, testear, diseñar, desplegar o actualizar el ta
 
 | Rol | Lectura obligatoria |
 | --- | --- |
-| **Todos los agentes** | `docs/architecture/frontend-structure.md` (arquitectura) y `docs/architecture/progress.md` (estado real) |
+| **Todos los agentes** | `AGENTS.md` (guía maestra y reglas), `docs/architecture/frontend-structure.md` (arquitectura), `docs/architecture/progress.md` (estado real) y `docs/security/crown-jewels.md` (joyas de la corona) |
 | developer | + `docs/design/brief.md`, `docs/design/components.md`, `docs/design/wireframes.md`, `docs/design/accessibility.md`, `docs/implementation/implementation_base.md`, `docs/trello/board.json`, `README.md` |
 | designer | + `docs/design/*` (su propia salida) y `docs/architecture/progress.md` (no rediseñar lo implementado) |
 | qa-reviewer | + `docs/design/*` (formato de diseño a validar), `docs/architecture/progress.md` (estado declarado) |
 | tester | + `docs/design/*`, `docs/architecture/progress.md`, `docs/tests/` (evidencia previa) |
-| security-reviewer | + `docs/architecture/frontend-structure.md`, `docs/architecture/progress.md` |
+| security-reviewer | + `AGENTS.md`, `docs/architecture/frontend-structure.md`, `docs/architecture/progress.md`, `docs/security/crown-jewels.md` |
+| security-architect | + `AGENTS.md`, `docs/architecture/frontend-structure.md`, `docs/architecture/progress.md`, `docs/security/crown-jewels.md`, `docs/Proyecto1_Junio2026.md`, `docs/implementation/implementation_base.md`, `docs/design/*` |
+| blue-team | + `AGENTS.md`, `docs/architecture/frontend-structure.md`, `docs/architecture/progress.md`, `docs/security/crown-jewels.md`, `docs/implementation/implementation_base.md` |
+| red-team | + `AGENTS.md`, `docs/architecture/frontend-structure.md`, `docs/architecture/progress.md`, `docs/security/crown-jewels.md`, `docs/Proyecto1_Junio2026.md`, `docs/implementation/implementation_base.md`, `docs/security/` (hallazgos previos para retests) |
 | devops | + `docs/architecture/frontend-structure.md`, `docs/architecture/progress.md`, `docs/deployment` (si existe) |
 | product-manager | + `docs/trello/board.json` y `docs/architecture/progress.md` |
 
@@ -28,6 +31,7 @@ Antes de **implementar, revisar, testear, diseñar, desplegar o actualizar el ta
 - **`docs/architecture/progress.md` — ESTADO (dinámico).** Se actualiza **siempre** tras cada implementación, corrección o prueba. Es el espejo fiel de qué está implementado y qué no.
 - **`docs/design/*`** — especificación de diseño que el implementador debe seguir; se actualiza solo en fase de diseño.
 - **`docs/tests/`** — evidencia de pruebas del tester.
+- **`docs/security/*`** — seguridad: `crown-jewels.md` (activos críticos P0/P1/P2) y reportes/auditorías de `security-architect`, `blue-team` y `red-team`.
 
 ## 3. Regla de documentación post-implementación (OBLIGATORIA)
 
@@ -44,10 +48,13 @@ Al finalizar **cualquier** implementación o corrección:
 Las fases **NO se saltan ni se mezclan**:
 
 ```
-diseño (designer) → implementación (developer) → revisión (qa-reviewer / security-reviewer) → testing (tester) → documentación (progress.md + docs/tests) → despliegue (devops)
+diseño (designer / security-architect) → implementación (developer / blue-team) → revisión (qa-reviewer / security-reviewer) → testing (tester) → documentación (progress.md + docs/tests) → despliegue (devops)
 ```
 
 - Si la tarea es de diseño → delega a `designer`; no reinventes la UI.
+- Si la tarea es de seguridad/arquitectura → el `security-architect` define el modelo de amenaza y requisitos OWASP en fase de diseño.
+- Si la tarea es de defensa/hardening o mitigar hallazgos → delega a `blue-team` (skill `seguridad`).
+- Si la tarea es de auditoría/pentesting → delega a `red-team` (skill `pentesting`), que reporta por severidad sin modificar código.
 - Si la tarea es de datos/backend → respeta los patrones de repositorio de `frontend-structure.md`.
 - Si ya existe diseño en `docs/design/*`, el `developer` debe implementarlo tal cual; cualquier desviación se documenta y se justifica.
 - Al finalizar, el `developer` reporta **qué quedó implementado y qué no**, para que `progress.md` y Trello reflejen la realidad.
