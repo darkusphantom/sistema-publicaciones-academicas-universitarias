@@ -10,11 +10,13 @@ El archivo `.husky/pre-commit` ejecuta, en orden:
 
 ```sh
 pnpm lint
+pnpm --filter @red-facyt/api lint
 # pnpm test:coverage
 ```
 
-1. **`pnpm lint`** — ESLint sobre todo el proyecto (configuración flat en `eslint.config.mjs`). Falla el commit si hay errores.
-2. **`pnpm test:coverage`** — Vitest con cobertura v8. Falla el commit si algún test falla **o** si la cobertura queda por debajo del umbral. Por el momento esta comentado hasta que se obtenga la estructura base del proyecto
+1. **`pnpm lint`** — ESLint sobre el web (configuración flat en `eslint.config.mjs`). `apps/**` está ignorado porque `apps/api` tiene su propia configuración ESLint. Falla el commit si hay errores.
+2. **`pnpm --filter @red-facyt/api lint`** — ESLint de la API (`apps/api`, flat config con `typescript-eslint`). Falla el commit si hay errores o warnings (`--max-warnings 0`).
+3. **`pnpm test:coverage`** — Vitest con cobertura v8. Falla el commit si algún test falla **o** si la cobertura queda por debajo del umbral. Por el momento esta comentado hasta que se obtenga la estructura base del proyecto
 
 Si cualquiera de los dos comandos falla, el commit se **bloquea** y el código no se integra.
 

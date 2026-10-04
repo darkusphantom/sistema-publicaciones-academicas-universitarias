@@ -1,0 +1,11 @@
+# El .gitignore raíz cubre .env* y *.tsbuildinfo en todo el repo,
+# pero sus patrones /node_modules, /coverage y /build solo aplican a la raíz.
+
+# Dependencias del workspace de la API.
+node_modules/
+
+# Salida de build (tsup).
+dist/
+
+# Reportes de cobertura de Vitest.
+coverage/
