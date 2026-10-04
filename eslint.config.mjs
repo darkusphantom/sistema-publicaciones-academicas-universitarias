@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "chrome/**",
     // Generated test coverage reports.
     "coverage/**",
+    // Workspaces con configuración ESLint propia (apps/api).
+    "apps/**",
   ]),
 ]);
 
