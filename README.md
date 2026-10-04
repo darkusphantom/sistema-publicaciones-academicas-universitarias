@@ -97,7 +97,14 @@ src/                        # Web frontend (Next.js) en la raíz
 
 ## API (`apps/api`)
 
-La API vive en `apps/api` (workspace `@red-facyt/api`), implementada con **Hono 4** y `@hono/node-server`. Por el momento es un **scaffold**: patrón `createApp`, entorno validado con zod, middleware de seguridad (CORS whitelist, security headers, body limit, error handler sin fuga de stack, 404 JSON, `x-request-id`) y el endpoint de salud `GET /api/v1/health`. La estructura está preparada para crecer hacia Better Auth + PostgreSQL sin rework (puertos hexagonales en `src/domain/`).
+La API vive en `apps/api` (workspace `@red-facyt/api`), implementada con **Hono 4** y `@hono/node-server`. Incluye:
+
+- **Scaffold**: patrón `createApp` (puro y testeable), entorno validado con zod (fail-fast), middleware de seguridad (CORS whitelist, security headers, body limit, error handler sin fuga de stack, 404 JSON, `x-request-id`) y `GET /api/v1/health`.
+- **Auth (Better Auth en memoria)**: registro, login (por `username`), sesión y logout bajo `/api/v1/auth/*`. Sesiones de BD en memoria (revocables), cookies `httpOnly`/`SameSite=Lax`/`Secure`(prod), hashing **Scrypt**, CSRF de doble envío (`facy.csrf_token`) y rate limiting por IP/usuario (`429`).
+- **Endpoints `/api/v1/*`**: feed `GET /posts` (filtros + paginación, visibilidad session-aware), CRUD de publicaciones con enforcement propietario/admin, perfiles (`/users/authors`, `/users/:username`) con email redactado, y admin (`/admin/users/:id/role`, `/admin/posts/:id/visibility`). Validación **zod** por ruta y rol **fresco por petición**.
+- **OpenAPI**: `GET /api/v1/openapi.json` y `/docs` (bloqueados en producción).
+
+En memoria (MVP): los datos viven en `src/infrastructure/repositories/in-memory/` con contrato hexagonal (`src/domain/`) migrable a PostgreSQL sin rework.
 
 ```bash
 # Instalar dependencias de la API (desde la raíz)
@@ -108,6 +115,9 @@ pnpm --filter @red-facyt/api dev
 
 # Verificar la salud
 curl http://localhost:3001/api/v1/health
+
+# Documentación OpenAPI (dev)
+curl http://localhost:3001/api/v1/openapi.json
 
 # Tests y calidad de la API
 cd apps/api
@@ -145,4 +155,5 @@ Documentación de la API: [`docs/architecture/api-structure.md`](docs/architectu
 - [`docs/architecture/api-structure.md`](docs/architecture/api-structure.md) — arquitectura de la API (`apps/api`)
 - [`docs/security/threat-model-api.md`](docs/security/threat-model-api.md) — modelo de amenaza de la API
 - [`docs/tests/api-scaffold-test-report.md`](docs/tests/api-scaffold-test-report.md) — evidencia de pruebas del scaffold de la API
+- [`docs/tests/api-auth-endpoints-test-report.md`](docs/tests/api-auth-endpoints-test-report.md) — evidencia de pruebas de auth + endpoints + OpenAPI
 - [`docs/husky.md`](docs/husky.md) — gate de calidad pre-commit

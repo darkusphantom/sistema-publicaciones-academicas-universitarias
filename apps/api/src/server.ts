@@ -9,6 +9,7 @@ import pinoHttp from "pino-http";
 import type { HttpLogger } from "pino-http";
 import { createApp } from "./app";
 import { parseEnv } from "./config/env";
+import { MemoryUserStore } from "./infrastructure/repositories/in-memory/user-store";
 
 /** Rutas de headers sensibles que el access log debe redactar (W3/H1). */
 const REDACTED_HEADERS = ["req.headers.cookie", "req.headers.authorization"];
@@ -69,7 +70,8 @@ export function createServer(envSource: NodeJS.ProcessEnv): ServerType {
   const env = parseEnv(envSource);
   const logger = pino({ level: env.LOG_LEVEL });
   const requestLogger = createRequestLogger(logger);
-  const app = createApp({ env, logger });
+  const store = new MemoryUserStore();
+  const app = createApp({ env, logger, store });
 
   const server = serve({
     fetch: (request, serverEnv) => {

@@ -27,8 +27,9 @@ export type AuthorOption = {
 };
 
 /**
- * Puerto hexagonal para el acceso a datos de usuarios (subconjunto de lectura
- * usado por el feed). Espejo fiel de `UserRepository` del frontend.
+ * Puerto hexagonal para el acceso a datos de usuarios. Incluye el subconjunto
+ * de lectura espejo del frontend (`listAuthors`) y las extensiones de la API
+ * (`findById`, `findByUsername`, `updateRole`), api-structure.md §11.3.
  */
 export interface UserRepository {
   /**
@@ -38,4 +39,38 @@ export interface UserRepository {
    * @returns Opciones de autor ordenadas por nombre completo.
    */
   listAuthors(): Promise<AuthorOption[]>;
+
+  /**
+   * Busca un usuario por su id.
+   *
+   * @param id - Id del usuario.
+   * @returns El usuario, o `null` si no existe.
+   */
+  findById(id: string): Promise<User | null>;
+
+  /**
+   * Busca un usuario por su username (identificador de acceso, auth.md §10.1).
+   *
+   * @param username - Username (sin mayúsculas).
+   * @returns El usuario, o `null` si no existe.
+   */
+  findByUsername(username: string): Promise<User | null>;
+
+  /**
+   * Busca un usuario por su email (unicidad sin distinguir mayúsculas, R12).
+   *
+   * @param email - Email.
+   * @returns El usuario, o `null` si no existe.
+   */
+  findByEmail(email: string): Promise<User | null>;
+
+  /**
+   * Actualiza el rol de un usuario. El efecto es inmediato para la siguiente
+   * petición (rol fresco, requisito R14 de threat-model-api.md).
+   *
+   * @param id   - Id del usuario.
+   * @param role - Nuevo rol.
+   * @returns El usuario actualizado, o `null` si no existe.
+   */
+  updateRole(id: string, role: UserRole): Promise<User | null>;
 }

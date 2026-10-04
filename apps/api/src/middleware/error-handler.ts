@@ -1,6 +1,7 @@
 import type { ErrorHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { Logger } from "pino";
+import { AppError } from "../application/errors";
 import type { Env } from "../config/env";
 
 /**
@@ -30,21 +31,51 @@ export function createErrorHandler(
   const { env, logger } = options;
   return (err, c) => {
     const requestId = c.get("requestId") ?? c.req.header("x-request-id");
+    if (err instanceof AppError) {
+      logger.warn(
+        { code: err.code, status: err.status, message: err.message, requestId },
+        "Application error",
+      );
+      return c.json(
+        { error: err.code, message: err.message },
+        err.status as 400,
+      );
+    }
     if (err instanceof HTTPException) {
-      logger.warn({ err, requestId }, "HTTP exception");
+      logger.warn(
+        { code: "http_error", status: err.status, message: err.message, requestId },
+        "HTTP exception",
+      );
       return c.json(
         { error: "http_error", message: err.message },
         err.status,
       );
     }
-    logger.error({ err, requestId }, "Unhandled error");
     const isProduction = env.NODE_ENV === "production";
+    const detail = err instanceof Error ? err.message : String(err);
+    const baseLog = { code: "internal_error", status: 500, requestId };
+    if (isProduction) {
+      // En producción el log no incluye el mensaje interno ni el stack.
+      logger.error(
+        { ...baseLog, message: "Internal server error" },
+        "Unhandled error",
+      );
+    } else {
+      logger.error(
+        {
+          ...baseLog,
+          message: detail,
+          stack: err instanceof Error ? err.stack : undefined,
+        },
+        "Unhandled error",
+      );
+    }
     const body = isProduction
       ? { error: "internal_error", message: "Internal server error" }
       : {
           error: "internal_error",
           message: "Internal server error",
-          detail: err instanceof Error ? err.message : String(err),
+          detail,
         };
     return c.json(body, 500);
   };

@@ -59,6 +59,17 @@ export type PostFilters = {
   dateTo: string | null;
 };
 
+/** Estado de filtros por defecto — sin filtros activos (espejo del frontend). */
+export const DEFAULT_POST_FILTERS: PostFilters = {
+  keyword: "",
+  category: "todas",
+  type: "todos",
+  authorId: "todos",
+  status: "todos",
+  dateFrom: null,
+  dateTo: null,
+};
+
 /**
  * Página de resultados del repositorio de publicaciones (espejo de
  * `post-repository.ts`).
@@ -77,11 +88,42 @@ export type PageOptions = {
 };
 
 /**
+ * Datos de creación de publicación aportados por el cliente
+ * (api-structure.md §9.3). El `authorId` y los timestamps los fija el
+ * servidor; nunca vienen del body.
+ */
+export type PostDraft = {
+  title: string;
+  content: string;
+  category: PostCategory;
+  type: PostType;
+  /** El autor solo puede crear `publicado` o `borrador`; `oculto` es de admin. */
+  visibility: "publicado" | "borrador";
+  imageUrl: string | null;
+};
+
+/**
+ * Parche de edición de publicación.
+ *
+ * `publishedAt` solo lo fija el SERVIDOR en la transición `borrador → publicado`
+ * (los esquemas zod de las rutas nunca lo aceptan del cliente). `visibility`
+ * admite además `oculto` para la vía de moderación por admin. Los campos
+ * inmutables (`id`, `authorId`, `createdAt`) nunca forman parte del parche.
+ */
+export type UpdatePost = Partial<
+  Pick<
+    Post,
+    "title" | "content" | "category" | "type" | "visibility" | "imageUrl" | "publishedAt"
+  >
+>;
+
+/**
  * Puerto hexagonal para el acceso a datos de publicaciones.
  *
  * Espejo fiel de `PostRepository` del frontend (`src/lib/repositories/`) para
- * que el backend sea plug-and-play sin rework del frontend. Los adaptadores de
- * `infrastructure/repositories/` implementan este puerto.
+ * que el backend sea plug-and-play sin rework del frontend (parte de lectura),
+ * más las extensiones de escritura de la API (api-structure.md §11.3). Los
+ * adaptadores de `infrastructure/repositories/` implementan este puerto.
  */
 export interface PostRepository {
   /**
@@ -108,4 +150,37 @@ export interface PostRepository {
    * @returns La publicación, o `null` si no existe.
    */
   findById(id: string): Promise<Post | null>;
+
+  /**
+   * Crea una publicación. `authorId` y los timestamps ya vienen resueltos
+   * por el caso de uso (nunca del body del cliente).
+   *
+   * @param draft - Borrador completo con metadatos de servidor.
+   * @returns La publicación creada.
+   */
+  create(
+    draft: PostDraft & {
+      authorId: string;
+      publishedAt: string;
+      createdAt: string;
+      updatedAt: string;
+    },
+  ): Promise<Post>;
+
+  /**
+   * Actualiza una publicación existente y devuelve la versión nueva.
+   *
+   * @param id    - Id de la publicación.
+   * @param patch - Campos editables.
+   * @returns La publicación actualizada, o `null` si el id no existe.
+   */
+  update(id: string, patch: UpdatePost): Promise<Post | null>;
+
+  /**
+   * Elimina una publicación.
+   *
+   * @param id - Id de la publicación.
+   * @returns `true` si existía y fue eliminada; `false` si no existía.
+   */
+  delete(id: string): Promise<boolean>;
 }

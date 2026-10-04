@@ -5,10 +5,12 @@ import { z } from "zod";
  *
  * Fail-fast: si una variable requerida falta o tiene un valor inválido,
  * `parseEnv` lanza un error y el proceso no arranca. Nunca hay defaults
- * silenciosos para valores que importan en producción (p. ej. `CORS_ORIGINS`).
+ * silenciosos para valores que importan en producción (p. ej. `CORS_ORIGINS`,
+ * `BETTER_AUTH_SECRET`). Fuera de producción los valores de auth/rate-limit
+ * tienen defaults de desarrollo claramente inseguros y documentados.
  */
 export const envSchema = z.object({
-  /** Entorno de ejecución: cambia el comportamiento del error handler. */
+  /** Entorno de ejecución: cambia el error handler y las cookies Secure. */
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
@@ -24,19 +26,41 @@ export const envSchema = z.object({
   LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])
     .default("info"),
-  // Claves futuras reservadas (llegan con auth/DB): opcionales hasta entonces,
-  // para que el contrato de configuración no cambie.
+  /** Cadena de conexión a PostgreSQL (futuro). */
   DATABASE_URL: z.string().optional(),
-  BETTER_AUTH_SECRET: z.string().optional(),
-  BETTER_AUTH_URL: z.string().optional(),
-  RATE_LIMIT_MAX: z.coerce.number().int().positive().optional(),
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().optional(),
+  /** Secreto de firma de sesiones de Better Auth (≥ 32 bytes). */
+  BETTER_AUTH_SECRET: z
+    .string()
+    .min(32)
+    .default(
+      "dev-only-insecure-secret-do-not-use-0123456789abcdef0123456789abcdef",
+    ),
+  /** URL pública de la API para Better Auth. */
+  BETTER_AUTH_URL: z.string().min(1).default("http://localhost:3001"),
+  /** Máximo de peticiones por ventana de rate limit. */
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  /** Duración de la ventana de rate limit en milisegundos. */
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+  /** Habilita el documento OpenAPI (`/openapi.json`, `/docs`). */
+  OPENAPI_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
 });
 
 /**
  * Entorno tipado resultante de `parseEnv`.
  */
 export type Env = z.infer<typeof envSchema>;
+
+/** Claves requeridas solo cuando `NODE_ENV=production` (R5). */
+const REQUIRED_IN_PRODUCTION: string[] = [
+  "CORS_ORIGINS",
+  "BETTER_AUTH_SECRET",
+  "BETTER_AUTH_URL",
+  "RATE_LIMIT_MAX",
+  "RATE_LIMIT_WINDOW_MS",
+];
 
 /**
  * Parsea el entorno de proceso con zod y falla rápido ante valores inválidos.
@@ -45,14 +69,18 @@ export type Env = z.infer<typeof envSchema>;
  *
  * @param source - Fuente de variables (normalmente `process.env`).
  * @returns Entorno tipado con los defaults aplicados.
- * @throws Error si `NODE_ENV=production` y falta `CORS_ORIGINS`, o si alguna
- *         variable no cumple el esquema.
+ * @throws Error si `NODE_ENV=production` y falta una clave requerida, o si
+ *         alguna variable no cumple el esquema.
  */
 export function parseEnv(source: NodeJS.ProcessEnv): Env {
-  if (source.NODE_ENV === "production" && source.CORS_ORIGINS === undefined) {
-    throw new Error(
-      "Invalid environment: CORS_ORIGINS is required when NODE_ENV=production",
-    );
+  if (source.NODE_ENV === "production") {
+    for (const key of REQUIRED_IN_PRODUCTION) {
+      if (source[key] === undefined) {
+        throw new Error(
+          `Invalid environment: ${key} is required when NODE_ENV=production`,
+        );
+      }
+    }
   }
   const result = envSchema.safeParse(source);
   if (!result.success) {

@@ -8,9 +8,10 @@ Documento de seguridad (agente `security-architect`) sobre la **superficie de la
 
 ## 1. Alcance y supuestos
 
-- **En alcance**: la superficie HTTP expuesta por `apps/api` (entry point `@hono/node-server`, pipeline de middleware, config/env, endpoint `GET /api/v1/health`) y las superficies futuras planificadas (auth Better Auth, PostgreSQL, CRUD de publicaciones, admin, uploads).
+- **En alcance**: la superficie HTTP expuesta por `apps/api` (entry point `@hono/node-server`, pipeline de middleware, config/env, endpoint `GET /api/v1/health`), las superficies del scaffold y la **entrega de auth + endpoints `/api/v1/*`** (Better Auth en memoria con sesiones stateless JWT, posts/feed, usuarios, admin, OpenAPI). Requisitos R1–R11 (scaffold) + R12–R18 (esta entrega).
 - **Fuera de alcance de este documento**: la superficie del frontend Next.js (protegida en su propia fase) y el modelo de datos PostgreSQL en sí (lo tratará `security-reviewer` con RLS/policies cuando exista, `crown-jewels.md` §P0-BD).
 - **Supuesto**: la API se despliega detrás de un reverse proxy (Caddy/Nginx) que termina TLS; HSTS se emite por la API, la terminación TLS es del proxy. El CORS whitelist es estricto porque el navegador es el único cliente confiable de origen cruzado.
+- **Supuesto de la entrega**: sesiones **stateless (JWT firmado con `BETTER_AUTH_SECRET`)** y almacenamiento **en memoria** (adapter de Better Auth + repositorios in-memory), migrables a PostgreSQL sin rework. La terminación TLS es del proxy: los flags `Secure` de las cookies dependen de que la API reciba HTTPS en producción.
 
 ---
 
@@ -34,12 +35,13 @@ Documento de seguridad (agente `security-architect`) sobre la **superficie de la
 | S2 | Pipeline de middleware | scaffold | Orden y correctitud de: request-id, security headers, CORS whitelist, body limit, rate limit, error handler, 404. |
 | S3 | `GET /api/v1/health` | scaffold | Único endpoint. No debe filtrar env, stack ni datos. |
 | S4 | Config/env (`parseEnv`) | scaffold | Manipulación del entorno (variables ausentes/maliciosas) y fuga de secretos en logs. |
-| S5 | Auth (`/auth/*`) | futuro (Better Auth) | Login, registro, sesión, logout. Joya P0 credenciales/sesiones. |
-| S6 | Posts (`/posts*`) | futuro | CRUD con visibilidad (publicado/borrador/oculto) y propiedad. Joya P0 publicaciones. |
-| S7 | Usuarios (`/users/:username`, `/users/authors`) | futuro | Exposición de datos de perfil; enumeración. |
-| S8 | Admin (`/admin/*`) | futuro | Asignación de roles; joya P0 acceso. |
+| S5 | Auth (`/auth/*`) | esta entrega (Better Auth, en memoria) | Login, registro, sesión, logout. Joya P0 credenciales/sesiones. |
+| S6 | Posts (`/posts*`) | esta entrega | CRUD con visibilidad (publicado/borrador/oculto) y propiedad. Joya P0 publicaciones. |
+| S7 | Usuarios (`/users/:username`, `/users/authors`) | esta entrega | Exposición de datos de perfil; enumeración. |
+| S8 | Admin (`/admin/*`) | esta entrega | Asignación de roles y moderación; joya P0 acceso. |
 | S9 | Uploads (`/uploads`) | futuro | Multipart; DoS por tamaño y fuga de archivos. |
-| S10 | Dependencias | scaffold+futuro | Supply chain (Hono, node-server, secure-headers, pino, zod, etc.). |
+| S10 | Dependencias | scaffold+futuro | Supply chain (Hono, node-server, secure-headers, pino, zod, better-auth, etc.). |
+| S11 | OpenAPI (`/openapi.json`, `/docs`) | esta entrega | Fuga de esquemas internos/secretos; abuso de la UI de docs. |
 
 ---
 
@@ -60,6 +62,12 @@ Tabla que traza cada superficie API a las joyas P0/P1/P2 que comprometería un a
 | S9 (uploads) | P1 API | Multipart sin límite → DoS; path traversal en archivo | 🟡 Advertencia |
 | S10 (deps) | P1 secretos (config) | Dependencia comprometida en runtime | 🟡 Advertencia |
 | S5 (auth) / S6 (posts) | P2 disponibilidad | Sin rate limit → saturación de login o de creación | 🟡 Advertencia |
+| S5 (auth — registro) | P0 credenciales | Enumeración de cuentas por mensajes/estado diferenciados; autoasignación de rol en el registro | 🔴 Crítico |
+| S5 (auth — sesión stateless) | P0 sesiones | JWT firmado con secreto débil, sin expiración/rotación; rol `stale` tras cambio por admin | 🔴 Crítico |
+| S6 (posts — feed) | P0 publicaciones | Fuga de `borrador`/`oculto` ajeno si la visibilidad no se replica en servidor | 🔴 Crítico |
+| S7 (usuarios) | P0 acceso / P1 API | Enumeración de usernames; fuga de email de terceros en perfiles | 🟡 Advertencia |
+| S8 (admin — rol fresco) | P0 acceso | Democión no efectiva (claim JWT stale) → escalada persistente de privilegios | 🔴 Crítico |
+| S11 (OpenAPI) | P1 secretos | Esquemas internos, valores de env o secretos en el documento; docs abiertas en producción | 🟡 Advertencia |
 
 ---
 
@@ -151,10 +159,92 @@ Cada requisito indica su prioridad (P0/P1/P2), cuándo aplica (**scaffold** ahor
 ### R11 — Enforcement server-side por rol/propietario (P0 · cuando lleguen endpoints · joya P0-acceso)
 
 - Cada ruta verifica sesión y, donde aplique, rol/propiedad **por petición** (nunca confiar en el rol del cliente). IDOR horizontal (autor) y vertical (admin) bloqueados. Reglas de visibilidad del feed (publicado/borrador/oculto) aplicadas en la query, como ya define `src/lib/visibility.ts`.
-- **Cómo se comprobará** (futuro, contract tests + tests de ruta):
-  - `PATCH /posts/:id` de un post ajeno con sesión de otro autor → `403` (o `404` para no revelar existencia).
+- **Cómo se comprobará** (contract tests + tests de ruta):
+  - `PATCH /posts/:id` de un post ajeno con sesión de otro autor → `403`.
   - `PATCH /admin/users/:id/role` con rol `estudiante` → `403`.
   - `GET /posts` con sesión X no devuelve `borrador`/`oculto` de otro autor (mismo contrato que `post-repository.contract.test.ts`).
+
+### R12 — Registro seguro (P0 · esta entrega · joya P0-credenciales + P0-acceso)
+
+- Validación `zod` **estricta en servidor** de cada regla de `auth.md` §4: `givenName`/`familyName` 2–60 (regex letras/espacio/`-`/`'`), `email` ≤ 254 normalizado a minúsculas, `password` 8–128 **sin `trim`**.
+- **El rol no es editable por el cliente**: el body de registro solo acepta `givenName`, `familyName`, `email`, `password`; cualquier `role` enviado se **ignora** (el usuario nace `estudiante`).
+- Unicidad de `email` y `username` (derivado). Conflicto → `409` con **cuerpo genérico idéntico** en ambos casos (anti-enumeración, joya P0). El `username` derivado se trunca a ≤ 50 y se sufija numéricamente en colisión.
+- Hashing del proveedor: **Scrypt** (KDF memory-hard de Better Auth, equivalente a argon2id en objetivos de `auth.md` §11.2) — **desvío registrado**: no argon2id/bcrypt.
+- Rate limiting por IP (R7) sobre `/auth/register`.
+- **Cómo se comprobará**:
+  - Test por cada regla de `auth.md` §4: payload inválido → `400` con detalle de campo.
+  - Test: `email` existente → `409` genérico; `username` derivado colisiona → sufijo numérico (≤ 50); **el cuerpo 409 es idéntico en ambos casos**.
+  - Test: body con `role: "admin"` → ignorado; el usuario creado queda `estudiante` (inspección vía `findById`).
+  - Test: N+1 registros desde la misma IP → `429`.
+  - Test/grep: el store no contiene contraseñas en texto plano y ninguna respuesta de auth las devuelve.
+  - Test anti-timing: el hash señuelo (decoy) corre también cuando el email existe (misma ruta de coste).
+
+### R13 — Login y sesión segura (P0 · esta entrega · joya P0-credenciales/sesiones)
+
+- `401` **idéntico** para usuario inexistente y contraseña incorrecta (`{ "error": "invalid_credentials", "message": "El usuario o la contraseña no coinciden." }`). Comparación en tiempo constante; **hash señuelo asíncrono** con los mismos parámetros Scrypt del proveedor cuando el username no existe (`auth.md` §11.2).
+- **Sesiones de BD en memoria (cookie opaca), NO stateless JWT — desvío H4 registrado**: Better Auth v1.7.7 no soporta sesiones realmente stateless (`session.cookieCache.strategy: "jwt"` solo cachea; la validación siempre consulta el store). La sesión se persiste en el `MemoryUserStore` (revocable: el `logout` la elimina) — **más segura que JWT** (revocación inmediata, sin JWT robado vigente 24 h), pero el modelo de amenaza se actualiza: no hay claim de rol stale (el rol es fresco por petición, R14) y la "verificación de firma del token" no aplica como en JWT.
+- Expiración **24 h**; renovación deslizante (sliding, cada 8 h); **rotación** de la sesión en cada login (cookie sobrescrita, anti session fixation).
+- Cookies: `httpOnly`, `SameSite=Lax`, `Secure` en producción, `Path=/`; `set-cookie` nunca contiene email ni contraseña.
+- CSRF en todas las mutaciones (doble envío con cookie propia `facy.csrf_token` — **desvío registrado**: Better Auth no emite `better-auth.csrf_token`; + `SameSite` + `trustedOrigins` + chequeo de `Origin`).
+- **Cómo se comprobará**:
+  - Test de headers: flags `HttpOnly`/`SameSite` siempre; `Secure` solo en producción.
+  - Test: login OK → `200` `Session` + cookie nueva; logout → `204` y `session` posterior → `401`.
+  - Test: usuario inexistente vs. contraseña incorrecta → **exactamente el mismo** `401`.
+  - Test: mutación con `Origin` presente y sin cookie/token CSRF → `403`.
+  - Test: sesión expirada → `401`; sesión revocada (logout) → `401`.
+  - Test (pino, mock transport): el body de login con `password` no aparece en la salida del logger.
+
+### R14 — Autorización con rol fresco por petición (P0 · esta entrega · joya P0-acceso)
+
+- El middleware `requireSession` resuelve la identidad por cookie (JWT) y **re-lee el rol del usuario del store en cada petición** (O(1) en memoria). La autorización **nunca confía en el claim `role` del JWT**: el claim es solo identidad, el rol es dato fresco.
+- Consecuencia: el cambio de rol por admin (incluida la **democión**) es efectivo de inmediato; sin esto, un JWT stateless mantendría un rol stale hasta la expiración.
+- **Cómo se comprobará**:
+  - Test: admin cambia el rol de X a `estudiante`; la sesión vigente de X (JWT con claim `role` viejo) pierde acceso a `/admin/*` de inmediato.
+  - Test de robustez: token firmado con claim `role: "admin"` pero store con `estudiante` → `403` en `/admin/*` (prueba que el claim no autoriza).
+
+### R15 — Posts: enforcement propietario/admin y visibilidad (P0 · esta entrega · joya P0-publicaciones + P0-acceso)
+
+- `POST /posts`: autenticado; `authorId` **siempre de la sesión** (nunca del body).
+- `PATCH`/`DELETE /posts/:id`: **autor o admin**; cualquier otro → `403` (IDOR horizontal y vertical bloqueados).
+- `GET /posts/:id`: aplica `canViewPost`; post no visible para la sesión → `404` (no revelar existencia de `borrador`/`oculto` ajenos).
+- Feed: réplica exacta de `src/lib/visibility.ts` (publicado → todos; borrador → autor; oculto → autor y admin; **admin NO ve borradores ajenos**).
+- Validación `zod` de `title`/`content`/`category`/`type`/`visibility` (R8); `publishedAt` inmutable (lo gestiona el servidor).
+- **Cómo se comprobará**:
+  - Contract tests del feed: **9 combinaciones** de visibilidad (port de `src/lib/visibility.test.ts`).
+  - Test: `PATCH`/`DELETE` de post ajeno → `403`; del propio → `200`/`204`; admin sobre cualquiera → `200`/`204`.
+  - Test: `GET /posts/:id` de borrador ajeno → `404`; de borrador propio → `200`.
+  - Test: body de creación con `authorId`/`role` inyectado → ignorado.
+  - Test: payload inválido → `400` con detalle de campo.
+
+### R16 — Admin: enforcement server-side por rol (P0 · esta entrega · joya P0-acceso)
+
+- `/admin/*` exige rol `admin` verificado **en servidor por petición** (R14): `requireSession` + `requireRole("admin")`. Nunca del cliente.
+- `PATCH /admin/users/:id/role`: solo admin; el rol no es aceptable desde ningún otro endpoint. `404` si el id no existe.
+- `PATCH /admin/posts/:id/visibility`: solo admin; acepta `"publicado"`/`"oculto"` (única vía para fijar `oculto`).
+- Riesgo asumido (MVP): un admin puede cambiarse su propio rol (lock-out); el `red-team` lo probará y se documenta.
+- **Cómo se comprobará**:
+  - Test: `estudiante`/`profesor` llaman a cualquier `/admin/*` → `403`.
+  - Test: admin cambia rol → `204` y el rol efectivo cambia en el store (inmediatez verificada por R14).
+  - Test: admin oculta/restaura un post → `200` y el feed refleja el cambio; no-admin → `403`; id inexistente → `404`.
+
+### R17 — OpenAPI sin fuga y bloqueado en producción (P1 · esta entrega · joya P1-secretos)
+
+- El documento OpenAPI solo refleja **formas wire** (`Post`, `PostPage`, `AuthorOption`, `Session`, `User`) y cuerpos de petición; sin secretos, valores de env, esquemas internos ni descripciones de infraestructura.
+- `NODE_ENV=production` (o `OPENAPI_ENABLED=false`): `/api/v1/openapi.json` y `/api/v1/docs` responden `404` (joya P1: "bloquear `/docs`, `/openapi.json` en producción", `crown-jewels.md`).
+- **Cómo se comprobará**:
+  - Test: en `production` → `GET /api/v1/openapi.json` y `/docs` → `404`.
+  - Test (dev): grep del documento — no contiene `secret`, claves de env, rutas internas (`src/`), ni valores reales.
+  - Review: `security-reviewer` confirma que el esquema solo expone las formas wire.
+
+### R18 — Perfiles y anti-enumeración (P1 · esta entrega · joya P0-credenciales + P1-API)
+
+- `GET /users/:username`: username inexistente → `404` genérico (no revelar existencia).
+- Email de un perfil **ajeno** redactado (`""`) salvo para el propio usuario o admin (no fugar PII de terceros).
+- `GET /users/authors`: solo `AuthorOption` (`id`, `username`, `fullName`); **nunca** `email` ni `role`.
+- **Cómo se comprobará**:
+  - Test: username inexistente → `404` con cuerpo genérico (idéntico al de un perfil existente sin posts si se decidiera así).
+  - Test: perfil ajeno → `email === ""`; propio → email completo; admin → email completo.
+  - Test: `/users/authors` no incluye el campo `email`.
 
 ---
 
@@ -173,6 +263,13 @@ Cada requisito indica su prioridad (P0/P1/P2), cuándo aplica (**scaffold** ahor
 | R9 Logging seguro | P2 | scaffold+futuro | P2 hardening |
 | R10 Cookies seguras | P0 | con auth | P0 sesiones |
 | R11 Enforcement por rol | P0 | con endpoints | P0 acceso |
+| R12 Registro seguro | P0 | esta entrega | P0 credenciales |
+| R13 Login y sesión stateless | P0 | esta entrega | P0 credenciales/sesiones |
+| R14 Rol fresco por petición | P0 | esta entrega | P0 acceso |
+| R15 Posts: propietario/admin + visibilidad | P0 | esta entrega | P0 publicaciones/acceso |
+| R16 Admin: enforcement server-side | P0 | esta entrega | P0 acceso |
+| R17 OpenAPI sin fuga / bloqueado en prod | P1 | esta entrega | P1 secretos |
+| R18 Perfiles y anti-enumeración | P1 | esta entrega | P1 API |
 
 ---
 
@@ -180,12 +277,15 @@ Cada requisito indica su prioridad (P0/P1/P2), cuándo aplica (**scaffold** ahor
 
 - El **CORS** protege al navegador, no a clientes no-navegador: los endpoints autenticados deben validar sesión igualmente (R11).
 - El **rate limiting en memoria** no escala a multi-instancia; aceptado para MVP, se migra a Redis en despliegue multi-replica (nota para `devops`).
+- **Sesión stateless JWT**: un token robado sigue siendo válido hasta su expiración (24 h) salvo lista negra en memoria; mitigaciones: expiración corta + sliding, `httpOnly`/`Secure`, CSRF y rotación en login. La lista negra en memoria se pierde al reiniciar la API (aceptado para MVP; en PostgreSQL se podrá revocar de forma persistente).
+- **Almacenamiento en memoria**: los datos de usuario/publicaciones/sesiones se pierden al reiniciar el proceso. Es coherente con el MVP y con la migración planificada a PostgreSQL; no es un almacén de producción durable.
+- **Admin auto-democión**: un admin puede cambiarse su propio rol y quedarse sin acceso admin (lock-out). Asumido y documentado en `api-structure.md` §9.5; el `red-team` lo probará.
 - **Suply chain (S10)**: mantener lockfile de `apps/api` versionado, `pnpm` con `allowBuilds` restringido (ya configurado en `pnpm-workspace.yaml`) y `pnpm audit` en CI (coordinación con `devops`).
 - La **terminación TLS** es responsabilidad del proxy; la API asume que llega HTTPS en producción (los flags `Secure` de cookies dependen de ello).
 
 ## 8. Cómo se verificará en las fases del pipeline
 
-- **Implementación**: el `developer` implementa R1–R6 (scaffold) en TDD con los tests indicados en cada requisito.
-- **Review**: `security-reviewer` y `qa-reviewer` validan cada requisito contra su "cómo se comprobará".
-- **Testing**: `tester` documenta evidencia en `docs/tests/` (scaffold: health, CORS, 404, 413, headers, error sin stack).
-- **Ofensiva/defensiva**: `red-team` auditará `apps/api` contra estas superficies; `blue-team` mitiga hallazgos. Hallazgos que toquen joyas P0 bloquean la integración (`crown-jewels.md` §5).
+- **Implementación**: el `developer` implementa R1–R6 (scaffold) en TDD y, en la entrega de auth+endpoints, R7, R8, R10, R11 y R12–R18 con los tests indicados en cada requisito.
+- **Review**: `security-reviewer` y `qa-reviewer` validan cada requisito contra su "cómo se comprobará". Los requisitos P0 que tocan joyas de la corona bloquean la integración hasta su corrección (`crown-jewels.md` §5).
+- **Testing**: `tester` documenta evidencia en `docs/tests/` (scaffold: health, CORS, 404, 413, headers, error sin stack; entrega: matriz de enforcement de `api-structure.md` §12.2 y cada "cómo se comprobará" de R12–R18).
+- **Ofensiva/defensiva**: `red-team` auditará `apps/api` contra estas superficies (incluidos S5–S8 y S11); `blue-team` mitiga hallazgos. Hallazgos que toquen joyas P0 bloquean la integración (`crown-jewels.md` §5).

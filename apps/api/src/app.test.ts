@@ -6,17 +6,36 @@ import { createApp } from "./app";
 import type { Env } from "./config/env";
 import { parseEnv } from "./config/env";
 import { parseCorsOrigins } from "./middleware/cors";
+import { ForbiddenError } from "./application/errors";
+import { MemoryUserStore } from "./infrastructure/repositories/in-memory/user-store";
 
 /**
  * Construye un entorno de prueba válido con overrides opcionales.
+ * Incluye las claves de auth/rate-limit para que `createApp` construya la
+ * instancia de Better Auth sin depender de `.env`.
  */
 function buildTestEnv(overrides: Record<string, string> = {}): Env {
-  return parseEnv({ NODE_ENV: "test", LOG_LEVEL: "silent", ...overrides });
+  return parseEnv({
+    NODE_ENV: "test",
+    LOG_LEVEL: "silent",
+    BETTER_AUTH_SECRET: "test-secret-0123456789abcdef0123456789abcdef-abcdef",
+    BETTER_AUTH_URL: "http://localhost:3001",
+    RATE_LIMIT_MAX: "100",
+    RATE_LIMIT_WINDOW_MS: "60000",
+    ...overrides,
+  });
+}
+
+/**
+ * Construye una app de prueba con un store limpio por test.
+ */
+function buildApp(overrides: Record<string, string> = {}) {
+  return createApp({ env: buildTestEnv(overrides), store: new MemoryUserStore() });
 }
 
 describe("createApp", () => {
   it("responds 200 with { status: 'ok' } on GET /api/v1/health", async () => {
-    const app = createApp({ env: buildTestEnv() });
+    const app = buildApp();
     const response = await app.request("/api/v1/health");
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/json");
@@ -24,7 +43,7 @@ describe("createApp", () => {
   });
 
   it("returns a JSON 404 for unknown routes without leaking internals", async () => {
-    const app = createApp({ env: buildTestEnv() });
+    const app = buildApp();
     const response = await app.request("/api/v1/nonexistent");
     expect(response.status).toBe(404);
     expect(response.headers.get("content-type")).toContain("application/json");
@@ -35,7 +54,7 @@ describe("createApp", () => {
   });
 
   it("emits security headers and never exposes X-Powered-By", async () => {
-    const app = createApp({ env: buildTestEnv() });
+    const app = buildApp();
     const response = await app.request("/api/v1/health");
     expect(response.headers.get("strict-transport-security")).toBeTruthy();
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
@@ -47,9 +66,7 @@ describe("createApp", () => {
   });
 
   it("allows a CORS origin listed in the whitelist", async () => {
-    const app = createApp({
-      env: buildTestEnv({ CORS_ORIGINS: "http://localhost:3000" }),
-    });
+    const app = buildApp({ CORS_ORIGINS: "http://localhost:3000" });
     const response = await app.request("/api/v1/health", {
       headers: { Origin: "http://localhost:3000" },
     });
@@ -59,9 +76,7 @@ describe("createApp", () => {
   });
 
   it("denies a CORS origin outside the whitelist", async () => {
-    const app = createApp({
-      env: buildTestEnv({ CORS_ORIGINS: "http://localhost:3000" }),
-    });
+    const app = buildApp({ CORS_ORIGINS: "http://localhost:3000" });
     const response = await app.request("/api/v1/health", {
       headers: { Origin: "https://evil.example" },
     });
@@ -69,9 +84,7 @@ describe("createApp", () => {
   });
 
   it("rejects a null CORS origin", async () => {
-    const app = createApp({
-      env: buildTestEnv({ CORS_ORIGINS: "http://localhost:3000" }),
-    });
+    const app = buildApp({ CORS_ORIGINS: "http://localhost:3000" });
     const response = await app.request("/api/v1/health", {
       headers: { Origin: "null" },
     });
@@ -79,9 +92,7 @@ describe("createApp", () => {
   });
 
   it("never uses a wildcard Access-Control-Allow-Origin", async () => {
-    const app = createApp({
-      env: buildTestEnv({ CORS_ORIGINS: "http://localhost:3000" }),
-    });
+    const app = buildApp({ CORS_ORIGINS: "http://localhost:3000" });
     const response = await app.request("/api/v1/health", {
       headers: { Origin: "http://localhost:3000" },
     });
@@ -89,7 +100,7 @@ describe("createApp", () => {
   });
 
   it("returns 413 when the request body exceeds MAX_BODY_BYTES", async () => {
-    const app = createApp({ env: buildTestEnv({ MAX_BODY_BYTES: "64" }) });
+    const app = buildApp({ MAX_BODY_BYTES: "64" });
     const payload = "x".repeat(128);
     const response = await app.request("/api/v1/health", {
       method: "POST",
@@ -106,11 +117,9 @@ describe("createApp", () => {
   });
 
   it("does not leak stack traces on 500 in production", async () => {
-    const app = createApp({
-      env: buildTestEnv({
-        NODE_ENV: "production",
-        CORS_ORIGINS: "http://localhost:3000",
-      }),
+    const app = buildApp({
+      NODE_ENV: "production",
+      CORS_ORIGINS: "http://localhost:3000",
     });
     app.get("/boom", () => {
       throw new Error("internal db credentials");
@@ -130,7 +139,7 @@ describe("createApp", () => {
   });
 
   it("may include error detail in development but never stack frames", async () => {
-    const app = createApp({ env: buildTestEnv({ NODE_ENV: "development" }) });
+    const app = buildApp({ NODE_ENV: "development" });
     app.get("/boom-dev", () => {
       throw new Error("boom detail");
     });
@@ -142,7 +151,7 @@ describe("createApp", () => {
   });
 
   it("returns the HTTPException status and message instead of 500", async () => {
-    const app = createApp({ env: buildTestEnv() });
+    const app = buildApp();
     app.get("/boom-http", () => {
       throw new HTTPException(400, { message: "Bad request" });
     });
@@ -151,6 +160,19 @@ describe("createApp", () => {
     expect(await response.json()).toEqual({
       error: "http_error",
       message: "Bad request",
+    });
+  });
+
+  it("maps AppError to its status and wire code", async () => {
+    const app = buildApp();
+    app.get("/boom-app", () => {
+      throw new ForbiddenError("No tienes permiso");
+    });
+    const response = await app.request("/boom-app");
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({
+      error: "forbidden",
+      message: "No tienes permiso",
     });
   });
 
@@ -163,7 +185,11 @@ describe("createApp", () => {
       },
     });
     const logger = pino({ level: "info" }, stream);
-    const app = createApp({ env: buildTestEnv(), logger });
+    const app = createApp({
+      env: buildTestEnv(),
+      store: new MemoryUserStore(),
+      logger,
+    });
     app.get("/boom-log", () => {
       throw new Error("kaboom");
     });
@@ -175,13 +201,13 @@ describe("createApp", () => {
   });
 
   it("tags every response with an x-request-id", async () => {
-    const app = createApp({ env: buildTestEnv() });
+    const app = buildApp();
     const response = await app.request("/api/v1/health");
     expect(response.headers.get("x-request-id")).toBeTruthy();
   });
 
   it("reuses a well-formed incoming x-request-id", async () => {
-    const app = createApp({ env: buildTestEnv() });
+    const app = buildApp();
     const response = await app.request("/api/v1/health", {
       headers: { "x-request-id": "trace-1234" },
     });
@@ -189,7 +215,7 @@ describe("createApp", () => {
   });
 
   it("replaces a malformed incoming x-request-id", async () => {
-    const app = createApp({ env: buildTestEnv() });
+    const app = buildApp();
     const response = await app.request("/api/v1/health", {
       headers: { "x-request-id": "bad id !!" },
     });
