@@ -68,11 +68,11 @@ describe("StaticPostRepository", () => {
     it("filters by category", async () => {
       const session = makeSession();
       const { items } = await repo.findVisible(
-        { ...noFilters, category: "defensas" },
+        { ...noFilters, category: "biologia" },
         fullPage,
         session,
       );
-      expect(items.every((p) => p.category === "defensas")).toBe(true);
+      expect(items.every((p) => p.category === "biologia")).toBe(true);
     });
 
     it("filters by keyword", async () => {
