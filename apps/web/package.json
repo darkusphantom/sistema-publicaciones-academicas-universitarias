@@ -1,15 +1,14 @@
 {
-  "name": "red-facyt",
+  "name": "@red-facyt/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
-    "dev:web": "pnpm --filter @red-facyt/web dev",
-    "dev:api": "pnpm --filter @red-facyt/api dev",
-    "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
-    "test": "pnpm -r test",
-    "test:coverage": "pnpm -r test:coverage",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint --max-warnings 0",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "prepare": "husky"
   },
   "dependencies": {

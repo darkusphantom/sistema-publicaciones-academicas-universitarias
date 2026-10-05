@@ -4,4 +4,5 @@
 
 pnpm lint
 pnpm --filter @red-facyt/api lint
+pnpm --filter @red-facyt/web lint
 #pnpm test:coverage

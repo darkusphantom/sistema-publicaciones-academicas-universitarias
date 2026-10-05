@@ -19,7 +19,6 @@ const eslintConfig = defineConfig([
     "coverage/**",
     // Workspaces con configuración ESLint propia (apps/api).
     "apps/**",
-    "packages/**"
   ]),
 ]);
 
