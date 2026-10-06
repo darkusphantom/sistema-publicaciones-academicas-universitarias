@@ -92,3 +92,23 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 - **2026-09-25 — Pantalla de bienvenida `/` implementada**: spec de diseño persistida en `docs/design/welcome.md` (+ `wireframes.md` §2.1); developer implementó parallax vertical CSS-first (scroll-driven, respeta `prefers-reduced-motion`), guard de onboarding `facy:onboarding` (primer ingreso vs. recurrente → `/login`), copy aprobado, tokens claro/oscuro, `theme.ts` (store externo, sin `next-themes`), primitivos propios (`button`, iconos). Lint OK, 125 tests, cobertura 100%, build `/` estático. Desvío: carpeta nueva `src/components/landing/` por registrar en arquitectura. Se usaron primitivos propios en lugar de shadcn/ui + next-themes (no instalados), decisión documentada en Trello.
 - **2026-09-25 — Esqueleto de estructura + skill de contexto**: se crearon carpetas base de la arquitectura objetivo y la skill `project-context`; se definió que `frontend-structure.md` es inmutable y el estado vive aquí.
 - **2026-09-24 — Scaffold**: arranque de Next.js y tooling; gate Husky funcional.
+## Migración a monorepo (Ola 1)
+
+| Ítem | Estado | Fecha |
+|---|---|---|
+| Movimiento frontend → `apps/web` | Completado | 2026-10-05 |
+| Estructura workspaces pnpm (`apps/*`) | Completado | 2026-10-05 |
+| Scripts orquestadores raíz | Completado | 2026-10-05 |
+| ESLint/Husky multi-workspace | Completado | 2026-10-05 |
+| Vitest configs por workspace | Completado | 2026-10-05 |
+| Gate lint+test cross-workspace | ✅ (445 tests: 180 API + 265 web) | 2026-10-05 |
+| Build API | ✅ | 2026-10-05 |
+| Build web | ✅ (tras corrección 4 errores TS preexistentes) | 2026-10-05 |
+| Migración taxonomía API → alineada con web (fuente de verdad) | Completado | 2026-10-05 |
+| `apps/api/src/domain/post.ts` + `validation.ts` + `routes/openapi.ts` actualizados | Completado | 2026-10-05 |
+| Repos/in-memory + tests API actualizados a nueva taxonomía | Completado | 2026-10-05 |
+
+**Desvíos registrados:**
+- Cobertura web global < 80% (preexistente a migración) — ver `vitest.config.mts` de web.
+- Test de root layout en `apps/web/src/__tests__/routes.smoke.test.tsx` deshabilitado temporalmente (comentado) — pendiente reactivar o documentar justificación.
+- `tsconfig.json` huérfano en raíz — evaluar eliminación/limpieza (solo usado para referencias, no build).
