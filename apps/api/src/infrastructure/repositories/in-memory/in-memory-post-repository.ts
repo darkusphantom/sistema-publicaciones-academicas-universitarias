@@ -158,6 +158,7 @@ export class InMemoryPostRepository implements PostRepository {
       authorId: draft.authorId,
       category: draft.category,
       type: draft.type,
+      researchArea: draft.researchArea,
       visibility: draft.visibility,
       publishedAt: draft.publishedAt,
       createdAt: draft.createdAt,

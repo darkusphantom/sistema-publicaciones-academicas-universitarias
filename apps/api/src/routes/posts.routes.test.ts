@@ -28,8 +28,9 @@ function makePost(overrides: Partial<Post> = {}): Post {
     title: "Test",
     content: "Body",
     authorId: "u-any",
-    category: "noticias",
+    category: "matematicas",
     type: "post",
+    researchArea: "general",
     visibility: "publicado",
     publishedAt: "2026-03-01T00:00:00Z",
     createdAt: "2026-03-01T00:00:00Z",
@@ -104,12 +105,12 @@ describe("Posts routes · feed GET /api/v1/posts", () => {
     const { app, store, authorJar } = await setup();
     const posts = new InMemoryPostRepository(store);
     posts.seed([
-      makePost({ id: "p-1", category: "defensas", title: "Defensa de tesis", publishedAt: "2026-01-01T00:00:00Z" }),
-      makePost({ id: "p-2", category: "noticias", title: "Noticia institucional", publishedAt: "2026-03-01T00:00:00Z" }),
-      makePost({ id: "p-3", category: "noticias", title: "Otra noticia", publishedAt: "2026-02-01T00:00:00Z" }),
+      makePost({ id: "p-1", category: "biologia", title: "Defensa de tesis", publishedAt: "2026-01-01T00:00:00Z" }),
+      makePost({ id: "p-2", category: "matematicas", title: "Noticia institucional", publishedAt: "2026-03-01T00:00:00Z" }),
+      makePost({ id: "p-3", category: "matematicas", title: "Otra noticia", publishedAt: "2026-02-01T00:00:00Z" }),
     ]);
     const filtered = await app.request(
-      "/api/v1/posts?categoria=noticias&limit=1&offset=0",
+      "/api/v1/posts?categoria=matematicas&limit=1&offset=0",
       { headers: { cookie: authorJar.header() } },
     );
     const body = await jsonOf(filtered);
@@ -179,8 +180,9 @@ describe("Posts routes · POST /api/v1/posts", () => {
       body: JSON.stringify({
         title: "Mi publicación",
         content: "Cuerpo",
-        category: "noticias",
+        category: "matematicas",
         type: "post",
+        researchArea: "general",
         visibility: "publicado",
       }),
     });
@@ -204,8 +206,9 @@ describe("Posts routes · POST /api/v1/posts", () => {
       body: JSON.stringify({
         title: "Hack",
         content: "Cuerpo",
-        category: "noticias",
+        category: "matematicas",
         type: "post",
+        researchArea: "general",
         visibility: "publicado",
         authorId: "u-attacker",
         role: "admin",
@@ -224,7 +227,7 @@ describe("Posts routes · POST /api/v1/posts", () => {
         "x-csrf-token": authorJar.get("facy.csrf_token") ?? "",
         cookie: authorJar.header(),
       },
-      body: JSON.stringify({ title: "", content: "x", category: "nope", type: "post", visibility: "publicado" }),
+      body: JSON.stringify({ title: "", content: "x", category: "nope", type: "post", researchArea: "general", visibility: "publicado" }),
     });
     expect(response.status).toBe(400);
     expect(await jsonOf(response)).toMatchObject({ error: "validation_error" });
@@ -242,8 +245,9 @@ describe("Posts routes · POST /api/v1/posts", () => {
       body: JSON.stringify({
         title: "x",
         content: "y",
-        category: "noticias",
+        category: "matematicas",
         type: "post",
+        researchArea: "general",
         visibility: "publicado",
       }),
     });
@@ -263,8 +267,9 @@ describe("Posts routes · POST /api/v1/posts", () => {
       body: JSON.stringify({
         title: "x",
         content: "y",
-        category: "noticias",
+        category: "matematicas",
         type: "post",
+        researchArea: "general",
         visibility: "publicado",
       }),
     });
@@ -284,8 +289,9 @@ describe("Posts routes · PATCH and DELETE /api/v1/posts/:id", () => {
       body: JSON.stringify({
         title: "Titulo",
         content: "Cuerpo",
-        category: "noticias",
+        category: "matematicas",
         type: "post",
+        researchArea: "general",
         visibility: "publicado",
         ...draft,
       }),

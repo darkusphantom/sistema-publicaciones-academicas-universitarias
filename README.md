@@ -74,25 +74,27 @@ Copia `.env.example` a `.env.local` y ajusta los valores. Nunca se suben secreto
 
 ## Estructura del proyecto
 
-Monorepo **pnpm** con dos workspaces:
+Monorepo **pnpm** con múltiples workspaces:
 
 ```
 apps/
-└── api/                     # API backend (@red-facyt/api) — Hono 4
-    ├── src/app.ts           #   createApp() puro y testeable
-    ├── src/server.ts        #   bootstrap HTTP (@hono/node-server)
-    ├── src/config/env.ts    #   entorno con zod (fail-fast)
-    ├── src/middleware/      #   seguridad: CORS, headers, body-limit, error-handler…
-    └── src/domain/          #   puertos hexagonales (contrato del frontend)
-src/                        # Web frontend (Next.js) en la raíz
-├── app/
-│   ├── (landing)/              # Ruta pública: /
-│   ├── (auth)/                 # Rutas públicas: /login, /register
-│   ├── (main)/                 # Rutas autenticadas: /feed, /profile/[username]
-│   ├── layout.tsx              # Layout raíz (metadata global)
-│   └── globals.css             # Estilos globales (Tailwind)
-├── lib/                        # Utilidades puras (format.ts)
-└── __tests__/                  # Tests de humo de las rutas
+├── api/                     # API backend (@red-facyt/api) — Hono 4
+│   ├── src/app.ts           #   createApp() puro y testeable
+│   ├── src/server.ts        #   bootstrap HTTP (@hono/node-server)
+│   ├── src/config/env.ts    #   entorno con zod (fail-fast)
+│   ├── src/middleware/      #   seguridad: CORS, headers, body-limit, error-handler…
+│   └── src/domain/          #   puertos hexagonales (contrato del frontend)
+└── web/                     # Web frontend (@red-facyt/web) — Next.js 16
+    ├── src/app/             #   Rutas de la aplicación (App Router)
+    ├── src/lib/             #   Utilidades frontend
+    └── src/__tests__/       #   Tests de rutas
+packages/
+├── shared/                  # Código común (@redfacyt/shared)
+│   ├── src/types/           #   Tipos TypeScript compartidos
+│   ├── src/schemas/         #   Esquemas Zod compartidos
+│   ├── src/taxonomy/        #   Enums y constantes taxonómicas
+│   └── src/domain/          #   Lógica de dominio pura compartida
+└── tsconfig/                # Configuración base de TypeScript
 ```
 
 ## API (`apps/api`)

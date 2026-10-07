@@ -43,6 +43,7 @@ export function registerPostRoutes(app: Hono, deps: RouteDeps): void {
       keyword: parsed.data.q,
       category: parsed.data.categoria,
       type: parsed.data.tipo,
+      researchArea: parsed.data.area,
       authorId: parsed.data.autor,
       status: parsed.data.estado,
       dateFrom: parsed.data.desde,

@@ -11,18 +11,16 @@
 !.yarn/versions
 
 # testing
-# **/coverage
-****/coverage
+coverage
+.nyc_output
 
 # next.js
-# **/.next/
-****/.next/
-/out/
+.next/
+out/
 
 # production
-# /build
-**/build
-
+build/
+dist/
 # misc
 .DS_Store
 *.pem

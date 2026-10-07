@@ -9,16 +9,16 @@ Husky gestiona los hooks de Git del proyecto. El hook **pre-commit** actúa como
 El archivo `.husky/pre-commit` ejecuta, en orden:
 
 ```sh
-pnpm lint
-pnpm --filter @red-facyt/api lint
-# pnpm test:coverage
+pnpm -r lint
+# pnpm -r test
+# pnpm -r test:coverage
 ```
 
-1. **`pnpm lint`** — ESLint sobre el web (configuración flat en `eslint.config.mjs`). `apps/**` está ignorado porque `apps/api` tiene su propia configuración ESLint. Falla el commit si hay errores.
-2. **`pnpm --filter @red-facyt/api lint`** — ESLint de la API (`apps/api`, flat config con `typescript-eslint`). Falla el commit si hay errores o warnings (`--max-warnings 0`).
-3. **`pnpm test:coverage`** — Vitest con cobertura v8. Falla el commit si algún test falla **o** si la cobertura queda por debajo del umbral. Por el momento esta comentado hasta que se obtenga la estructura base del proyecto
+1. **`pnpm -r lint`** — Ejecuta ESLint en todos los workspaces del monorepo (`apps/api`, `apps/web`, `packages/shared`, etc.). Falla el commit si hay errores.
+2. **`pnpm -r test`** — Ejecuta Vitest en todos los workspaces. (Reemplazará a `test:coverage` momentáneamente hasta asentar la estructura).
+3. **`pnpm -r test:coverage`** — (Actualmente comentado). Vitest con cobertura v8 en todo el monorepo.
 
-Si cualquiera de los dos comandos falla, el commit se **bloquea** y el código no se integra.
+Si cualquiera de los comandos habilitados falla, el commit se **bloquea** y el código no se integra.
 
 ## Gate de cobertura ≥ 80%
 

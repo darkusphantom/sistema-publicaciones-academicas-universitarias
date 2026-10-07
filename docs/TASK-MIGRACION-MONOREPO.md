@@ -31,48 +31,48 @@ pnpm --filter @red-facyt/api build
 ## OLA 2 - FASE 2: Crear packages/shared
 
 ### Estructura
-- [ ] Crear `packages/shared/src/taxonomy/post-type.ts`
-- [ ] Crear `packages/shared/src/taxonomy/post-category.ts`
-- [ ] Crear `packages/shared/src/taxonomy/research-area.ts`
-- [ ] Crear `packages/shared/src/taxonomy/post-visibility.ts`
-- [ ] Crear `packages/shared/src/types/post.ts`
-- [ ] Crear `packages/shared/src/types/user.ts`
-- [ ] Crear `packages/shared/src/types/session.ts`
-- [ ] Crear `packages/shared/src/types/filters.ts`
-- [ ] Crear `packages/shared/src/types/pagination.ts`
-- [ ] Crear `packages/shared/src/schemas/post.ts`
-- [ ] Crear `packages/shared/src/schemas/auth.ts`
-- [ ] Crear `packages/shared/src/schemas/user.ts`
-- [ ] Crear `packages/shared/src/domain/can-view-post.ts` (extraer de visibility.ts)
-- [ ] Crear `packages/shared/src/domain/filters.ts` (extraer de filters.ts)
-- [ ] Crear `packages/shared/src/index.ts` (barrel exports)
-- [ ] Crear `packages/shared/package.json` (@redfacyt/shared, workspace deps zod)
-- [ ] Crear `packages/shared/tsconfig.json`
-- [ ] Crear `packages/shared/vitest.config.mts`
-- [ ] Crear `packages/shared/eslint.config.mjs`
+- [x] Crear `packages/shared/src/taxonomy/post-type.ts`
+- [x] Crear `packages/shared/src/taxonomy/post-category.ts`
+- [x] Crear `packages/shared/src/taxonomy/research-area.ts`
+- [x] Crear `packages/shared/src/taxonomy/post-visibility.ts`
+- [x] Crear `packages/shared/src/types/post.ts`
+- [x] Crear `packages/shared/src/types/user.ts`
+- [x] Crear `packages/shared/src/types/session.ts`
+- [x] Crear `packages/shared/src/types/filters.ts`
+- [x] Crear `packages/shared/src/types/pagination.ts`
+- [x] Crear `packages/shared/src/schemas/post.ts`
+- [x] Crear `packages/shared/src/schemas/auth.ts`
+- [x] Crear `packages/shared/src/schemas/user.ts`
+- [x] Crear `packages/shared/src/domain/can-view-post.ts` (extraer de visibility.ts)
+- [x] Crear `packages/shared/src/domain/filters.ts` (extraer de filters.ts)
+- [x] Crear `packages/shared/src/index.ts` (barrel exports)
+- [x] Crear `packages/shared/package.json` (@redfacyt/shared, workspace deps zod)
+- [x] Crear `packages/shared/tsconfig.json`
+- [x] Crear `packages/shared/vitest.config.mts`
+- [x] Crear `packages/shared/eslint.config.mjs`
 
 ### Infraestructura tsconfig
-- [ ] Crear `packages/tsconfig/base.json`
+- [x] Crear `packages/tsconfig/base.json`
 
 ### Workspace
-- [ ] Editar `pnpm-workspace.yaml` → añadir `"packages/*"`
+- [x] Editar `pnpm-workspace.yaml` → añadir `"packages/*"`
 
 ### Dependencias
-- [ ] `apps/web/package.json` → añadir `"@redfacyt/shared": "workspace:*"`
-- [ ] `apps/api/package.json` → añadir `"@redfacyt/shared": "workspace:*"`
-- [ ] `apps/web/next.config.ts` → añadir `transpilePackages: ["@redfacyt/shared"]`
+- [x] `apps/web/package.json` → añadir `"@redfacyt/shared": "workspace:*"`
+- [x] `apps/api/package.json` → añadir `"@redfacyt/shared": "workspace:*"`
+- [x] `apps/web/next.config.ts` → añadir `transpilePackages: ["@redfacyt/shared"]`
 
 ## FASE 4: Shims/re-exports
-- [ ] `apps/web/src/lib/types.ts` → re-exportar desde `@redfacyt/shared`
-- [ ] `apps/web/src/lib/visibility.ts` → usar shared/domain
-- [ ] `apps/web/src/lib/filters.ts` → usar shared/domain
-- [ ] `apps/web/src/lib/validation/auth.ts` → migrar a shared o mantener shim
-- [ ] `apps/web/src/lib/validation/post.ts` → migrar a shared o mantener shim
-- [ ] `apps/api/src/domain/post.ts` → re-exportar desde `@redfacyt/shared` (o consumir directamente)
-- [ ] `apps/api/src/domain/user.ts` → re-exportar/consumir shared
-- [ ] `apps/api/src/domain/session.ts` → re-exportar/consumir shared
-- [ ] `apps/api/src/domain/visibility.ts` → re-exportar/consumir shared
-- [ ] `apps/api/src/domain/validation.ts` → re-exportar/consumir shared
+- [x] `apps/web/src/lib/types.ts` → re-exportar desde `@redfacyt/shared`
+- [x] `apps/web/src/lib/visibility.ts` → usar shared/domain
+- [x] `apps/web/src/lib/filters.ts` → usar shared/domain
+- [x] `apps/web/src/lib/validation/auth.ts` → migrar a shared o mantener shim (revisado)
+- [x] `apps/web/src/lib/validation/post.ts` → migrar a shared o mantener shim (revisado)
+- [x] `apps/api/src/domain/post.ts` → re-exportar desde `@redfacyt/shared` (o consumir directamente)
+- [x] `apps/api/src/domain/user.ts` → re-exportar/consumir shared
+- [x] `apps/api/src/domain/session.ts` → re-exportar/consumir shared
+- [x] `apps/api/src/domain/visibility.ts` → re-exportar/consumir shared
+- [x] `apps/api/src/domain/validation.ts` → re-exportar/consumir shared
 
 ## FASE 5: Validación
 - [ ] `pnpm install`
@@ -84,24 +84,24 @@ pnpm --filter @red-facyt/api build
 ## DETALLES PENDIENTES Ola 1 (I-4, I-5, I-6, I-7)
 
 ### Limpieza raíz
-- [ ] Evaluar/eliminar `tsconfig.json` raíz (huérfano, 186 errores si se ejecuta solo)
-- [ ] Limpiar deps duplicadas en `package.json` raíz (next/react/etc ya en apps/web)
-- [ ] Eliminar `.next/` huérfano en raíz
-- [ ] Revisar `eslint.config.mjs` raíz (nunca se ejecuta con pnpm -r lint)
-- [ ] Simplificar `.husky/pre-commit` (quitar filtros duplicados, usar `pnpm -r lint`)
+- [x] Evaluar/eliminar `tsconfig.json` raíz (huérfano, 186 errores si se ejecuta solo)
+- [x] Limpiar deps duplicadas en `package.json` raíz (next/react/etc ya en apps/web)
+- [x] Eliminar `.next/` huérfano en raíz
+- [x] Revisar `eslint.config.mjs` raíz (nunca se ejecuta con pnpm -r lint)
+- [x] Simplificar `.husky/pre-commit` (quitar filtros duplicados, usar `pnpm -r lint`)
 
 ### .gitignore
-- [ ] Normalizar patrones: `**/coverage`, `**/.next/`, `build/` (desanclado ya aplicado parcialmente)
+- [x] Normalizar patrones: `**/coverage`, `**/.next/`, `build/` (desanclado ya aplicado parcialmente)
 
 ### Tests
-- [ ] Reactivar test comentado en `apps/web/src/__tests__/routes.smoke.test.tsx` (I-4) O documentar justificación en progress.md
+- [x] Reactivar test comentado en `apps/web/src/__tests__/routes.smoke.test.tsx` (I-4) O documentar justificación en progress.md
 
 ### Documentación
-- [ ] `docs/architecture/monorepo-structure.md` → creado (revisar/ajustar con shared)
-- [ ] `docs/architecture/progress.md` → actualizado con migración (hecho)
-- [ ] `docs/architecture/frontend-structure.md` → actualizar paths `src/` → `apps/web/src/` (requiere aprobación por ser inmutable)
-- [ ] `README.md` → corregir referencias a estructura (líneas 82-84 mencionan src/ raíz)
-- [ ] `docs/husky.md` → actualizar con multi-workspace
+- [x] `docs/architecture/monorepo-structure.md` → creado (revisar/ajustar con shared)
+- [x] `docs/architecture/progress.md` → actualizado con migración (hecho)
+- [x] `docs/architecture/frontend-structure.md` → actualizar paths `src/` → `apps/web/src/` (requiere aprobación por ser inmutable)
+- [x] `README.md` → corregir referencias a estructura (líneas 82-84 mencionan src/ raíz)
+- [x] `docs/husky.md` → actualizar con multi-workspace
 - [ ] Crear `docs/tests/monorepo-migration-test-report.md` (evidencia lint/test/build)
 
 ## NOTAS

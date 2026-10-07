@@ -1,36 +1,22 @@
 /**
- * Roles posibles de un usuario de la plataforma (espejo de `src/lib/types.ts`).
+ * Re-exportaciones de tipos de usuario desde `@redfacyt/shared`.
+ *
+ * Shim de compatibilidad: todos los imports existentes en `apps/api`
+ * que apuntan a `../domain/user` continúan funcionando sin modificaciones.
+ *
+ * @module domain/user
  */
-export type UserRole = "estudiante" | "profesor" | "admin";
+
+import type { UserRole, User, AuthorOption } from "@redfacyt/shared";
+
+export type { UserRole, User, AuthorOption };
 
 /**
- * Usuario registrado en el sistema (espejo de `src/lib/types.ts`).
+ * Puerto hexagonal para el acceso a datos de usuarios.
+ *
+ * Los adaptadores de `infrastructure/repositories/` implementan este puerto.
  */
-export type User = {
-  id: string;
-  username: string;
-  email: string;
-  givenName: string;
-  familyName: string;
-  role: UserRole;
-  createdAt: string;
-};
 
-/**
- * Datos ligeros de autor para filtros y tarjetas (espejo de `src/lib/types.ts`).
- */
-export type AuthorOption = {
-  id: string;
-  username: string;
-  /** Nombre completo para mostrar, p. ej. "María Rivas". */
-  fullName: string;
-};
-
-/**
- * Puerto hexagonal para el acceso a datos de usuarios. Incluye el subconjunto
- * de lectura espejo del frontend (`listAuthors`) y las extensiones de la API
- * (`findById`, `findByUsername`, `updateRole`), api-structure.md §11.3.
- */
 export interface UserRepository {
   /**
    * Devuelve los usuarios con al menos una publicación, ordenados por nombre

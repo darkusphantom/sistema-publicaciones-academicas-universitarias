@@ -8,7 +8,6 @@ import {
   RegisterSchema,
   SetUserRoleSchema,
   UpdatePostSchema,
-  dateParamSchema,
   emailSchema,
   idSchema,
   nameSchema,
@@ -86,27 +85,21 @@ describe("validation schemas", () => {
     });
   });
 
-  describe("idSchema and dateParamSchema", () => {
+  describe("idSchema", () => {
     it("accepts an id of 1-64 chars", () => {
       expect(idSchema.safeParse("u-123").success).toBe(true);
       expect(idSchema.safeParse("").success).toBe(false);
       expect(idSchema.safeParse("a".repeat(65)).success).toBe(false);
     });
-
-    it("accepts only YYYY-MM-DD dates", () => {
-      expect(dateParamSchema.safeParse("2026-03-12").success).toBe(true);
-      expect(dateParamSchema.safeParse("2026-3-2").success).toBe(false);
-      expect(dateParamSchema.safeParse("12/03/2026").success).toBe(false);
-    });
   });
 
   describe("domain enums", () => {
     it("postCategorySchema accepts the five categories", () => {
-      expect(postCategorySchema.safeParse("noticias").success).toBe(true);
-      expect(postCategorySchema.safeParse("eventos").success).toBe(true);
-      expect(postCategorySchema.safeParse("defensas").success).toBe(true);
-      expect(postCategorySchema.safeParse("investigacion").success).toBe(true);
-      expect(postCategorySchema.safeParse("convocatorias").success).toBe(true);
+      expect(postCategorySchema.safeParse("matematicas").success).toBe(true);
+      expect(postCategorySchema.safeParse("computacion").success).toBe(true);
+      expect(postCategorySchema.safeParse("fisica").success).toBe(true);
+      expect(postCategorySchema.safeParse("quimica").success).toBe(true);
+      expect(postCategorySchema.safeParse("biologia").success).toBe(true);
       expect(postCategorySchema.safeParse("otro").success).toBe(false);
     });
 
@@ -128,8 +121,9 @@ describe("validation schemas", () => {
       const result = PostDraftSchema.safeParse({
         title: " Título ",
         content: "Contenido",
-        category: "noticias",
+        category: "matematicas",
         type: "post",
+        researchArea: "general",
         visibility: "publicado",
       });
       expect(result.success).toBe(true);
@@ -146,6 +140,7 @@ describe("validation schemas", () => {
           content: "y",
           category: "nope",
           type: "post",
+          researchArea: "general",
           visibility: "publicado",
         }).success,
       ).toBe(false);
@@ -153,8 +148,9 @@ describe("validation schemas", () => {
         PostDraftSchema.safeParse({
           title: "",
           content: "y",
-          category: "noticias",
+          category: "matematicas",
           type: "post",
+          researchArea: "general",
           visibility: "publicado",
         }).success,
       ).toBe(false);
@@ -162,8 +158,9 @@ describe("validation schemas", () => {
         PostDraftSchema.safeParse({
           title: "x",
           content: "y".repeat(10001),
-          category: "noticias",
+          category: "matematicas",
           type: "post",
+          researchArea: "general",
           visibility: "publicado",
         }).success,
       ).toBe(false);
@@ -174,8 +171,9 @@ describe("validation schemas", () => {
         PostDraftSchema.safeParse({
           title: "x",
           content: "y",
-          category: "noticias",
+          category: "matematicas",
           type: "post",
+          researchArea: "general",
           visibility: "oculto",
         }).success,
       ).toBe(false);

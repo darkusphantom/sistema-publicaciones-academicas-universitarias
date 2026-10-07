@@ -1,14 +1,10 @@
-import type { UserRole } from "./user";
-
 /**
- * Sesión activa de usuario (espejo de `src/lib/types.ts`).
- * La sesión nunca contiene la contraseña ni el correo.
+ * Re-exportaciones del tipo Session desde `@redfacyt/shared`.
+ *
+ * Shim de compatibilidad: todos los imports existentes en `apps/api`
+ * que apuntan a `../domain/session` continúan funcionando sin modificaciones.
+ *
+ * @module domain/session
  */
-export type Session = {
-  user: {
-    id: string;
-    username: string;
-    role: UserRole;
-  };
-  expiresAt: string;
-};
+
+export type { Session } from "@redfacyt/shared";

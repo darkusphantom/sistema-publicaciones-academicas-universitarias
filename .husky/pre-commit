@@ -2,7 +2,6 @@
 # Runs ESLint and the test suite with coverage (>= 80% threshold) before every commit.
 # See docs/husky.md for details on how to extend or bypass this hook.
 
-pnpm lint
-pnpm --filter @red-facyt/api lint
-pnpm --filter @red-facyt/web lint
-#pnpm test:coverage
+pnpm -r lint
+# pnpm -r test
+# pnpm -r test:coverage

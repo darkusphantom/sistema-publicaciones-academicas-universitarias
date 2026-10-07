@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "@/app/(auth)/login/page";
 import RegisterPage from "@/app/(auth)/register/page";
 import LandingPage from "@/app/(landing)/page";
-//import RootLayout from "@/app/layout";
+// import RootLayout from "@/app/layout";
 import FeedPage from "@/app/(main)/feed/page";
 import ProfilePage from "@/app/(main)/profile/[username]/page";
 
@@ -52,15 +52,14 @@ beforeEach(() => {
  * These guarantee the App Router mounts without errors.
  */
 describe("route smoke tests", () => {
-  /**it("renders the root layout with its children", () => {
-    render(
-      <RootLayout params={Promise.resolve({})}>
-        <p>layout child</p>
-      </RootLayout>,
-    );
+  /**it("renders the root layout with its children", async () => {
+    // Componente Server asíncrono o síncrono en Next 16
+    const Layout = RootLayout as unknown as (props: any) => Promise<JSX.Element> | JSX.Element;
+    const layoutElement = await Layout({ children: <p>layout child</p> });
+    render(layoutElement);
 
     expect(screen.getByText("layout child")).toBeInTheDocument();
-  });**/
+  });*/
 
   it("renders the landing page", () => {
     render(<LandingPage />);

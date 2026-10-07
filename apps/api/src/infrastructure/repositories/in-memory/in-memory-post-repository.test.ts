@@ -13,6 +13,7 @@ const noFilters: PostFilters = {
   type: "todos",
   authorId: "todos",
   status: "todos",
+  researchArea: "todas",
   dateFrom: null,
   dateTo: null,
 };
@@ -28,8 +29,9 @@ function makePost(overrides: Partial<Post> = {}): Post {
     title: "Test post",
     content: "Content body",
     authorId: "u-author",
-    category: "noticias",
+    category: "matematicas",
     type: "post",
+    researchArea: "general",
     visibility: "publicado",
     publishedAt: "2026-03-12T10:00:00Z",
     createdAt: "2026-03-12T10:00:00Z",
@@ -50,8 +52,9 @@ function makeDraft(overrides: Partial<PostDraft> = {}): PostDraft {
   return {
     title: "Nuevo",
     content: "Cuerpo",
-    category: "noticias",
+    category: "matematicas",
     type: "post",
+    researchArea: "general",
     visibility: "publicado",
     imageUrl: null,
     ...overrides,
@@ -209,13 +212,13 @@ describe("InMemoryPostRepository · findVisible", () => {
   it("filters by category, type, author, status, dates and keyword", async () => {
     const repo = new InMemoryPostRepository(new MemoryUserStore());
     repo.seed([
-      makePost({ id: "p-1", category: "defensas", type: "articulo", authorId: "u-a", visibility: "publicado", publishedAt: "2026-03-01T00:00:00Z", title: "Talleres de primavera", content: "..." }),
-      makePost({ id: "p-2", category: "noticias", type: "post", authorId: "u-a", visibility: "publicado", publishedAt: "2026-03-02T00:00:00Z", title: "Noticia", content: "talleres aquí" }),
-      makePost({ id: "p-3", category: "noticias", type: "post", authorId: "u-b", visibility: "publicado", publishedAt: "2026-04-01T00:00:00Z", title: "Otra", content: "nada" }),
+      makePost({ id: "p-1", category: "biologia", type: "articulo", authorId: "u-a", visibility: "publicado", publishedAt: "2026-03-01T00:00:00Z", title: "Talleres de primavera", content: "..." }),
+      makePost({ id: "p-2", category: "matematicas", type: "post", authorId: "u-a", visibility: "publicado", publishedAt: "2026-03-02T00:00:00Z", title: "Noticia", content: "talleres aquí" }),
+      makePost({ id: "p-3", category: "matematicas", type: "post", authorId: "u-b", visibility: "publicado", publishedAt: "2026-04-01T00:00:00Z", title: "Otra", content: "nada" }),
     ]);
     const session = makeSession({ id: "u-viewer" });
 
-    const byCategory = await repo.findVisible({ ...noFilters, category: "noticias" }, fullPage, session);
+    const byCategory = await repo.findVisible({ ...noFilters, category: "matematicas" }, fullPage, session);
     expect(byCategory.items.map((p) => p.id)).toEqual(["p-3", "p-2"]);
 
     const byType = await repo.findVisible({ ...noFilters, type: "articulo" }, fullPage, session);
