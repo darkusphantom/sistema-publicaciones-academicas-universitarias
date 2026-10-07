@@ -31,7 +31,7 @@ Fuentes de referencia:
 Estructura **colocated**: cada test vive junto al código que verifica; `src/test/` centraliza solo helpers de test (factories, fixtures, render, adaptadores in-memory) y `__tests__/` queda reservado para los smoke tests de rutas. Los tests del espejo de carpetas no están duplicados: es una visual del código fuente, y cada `*.test.*` se crea junto a su módulo.
 
 ```
-src/
+apps/web/src/
 ├── app/                          → RUTA GROUPS — páginas, layouts y metadata
 │   ├── layout.tsx                ✓ Layout raíz (metadata, ThemeProvider, .dark)
 │   ├── globals.css               ✓ Tokens claro/oscuro + Tailwind
@@ -70,11 +70,11 @@ src/
 │       ├── empty-state.tsx       + empty-state.test.tsx
 │       └── pagination.tsx
 │
-├── lib/                          → LÓGICA PURA — cobertura alta
-│   ├── format.ts                 ✓ + format.test.ts   ✓ (colocated, existe)
-│   ├── types.ts                  → Post, User, Session, PostFilters (compartidos)
-│   ├── visibility.ts             + visibility.test.ts    → regla del feed
-│   ├── filters.ts                + filters.test.ts       → filtros combinados + orden DESC
+├── lib/                          → LÓGICA PURA Y RE-EXPORTACIONES
+│   ├── format.ts                 ✓ + format.test.ts   ✓ (colocated)
+│   ├── types.ts                  → Re-exporta Post, User, Session, PostFilters desde @redfacyt/shared
+│   ├── visibility.ts             → Re-exporta canViewPost desde @redfacyt/shared
+│   ├── filters.ts                → Re-exporta applyFilters desde @redfacyt/shared
 │   └── repositories/             → CONTRATO hexagonal (interfaz ≠ implementación)
 │       ├── post-repository.ts            → interfaz PostRepository
 │       ├── post-repository.static.ts     → impl. estática sobre src/data
@@ -101,7 +101,7 @@ src/
 
 ### Convenciones
 
-- **Código en inglés**: nombres de archivos, identificadores, strings de interfaz en `src/`.
+- **Código en inglés**: nombres de archivos, identificadores, strings de interfaz en `apps/web/src/`.
 - **UI en español**: todo texto visible al usuario va en español.
 - **JSDoc obligatorio** en toda función/componente público.
 - **Server Components por defecto**; `'use client'` solo donde haya interacción (forms, ThemeToggle, filtros).

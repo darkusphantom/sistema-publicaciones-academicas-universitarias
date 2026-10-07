@@ -1,7 +1,7 @@
 # Estructura del Monorepo — Red FaCyT
 
 ## Estado actual
-Tras la migración Ola 1, el frontend Next.js 16 (App Router) se encuentra en `apps/web` y el backend API (Hono 4) en `apps/api`. La fase Ola 2 contempla la creación de `packages/shared` y `packages/tsconfig` para unificar taxonomía, tipos, esquemas y lógica pura.
+Tras la migración Ola 1 y Ola 2, el frontend Next.js 16 (App Router) se encuentra en `apps/web` y el backend API (Hono 4) en `apps/api`. La carpeta `packages/shared` consolida la taxonomía, los tipos, los esquemas y la lógica pura compartida por toda la aplicación, mientras que `packages/tsconfig` proporciona la configuración base.
 
 ## Estructura objetivo
 
@@ -26,7 +26,7 @@ red-facyt/
 │       │   ├── app/
 │       │   ├── components/
 │       │   ├── data/
-│       │   ├── lib/           # Re-exportará desde shared tras Ola 2
+│       │   ├── lib/           # Utilidades exclusivas del frontend
 │       │   ├── test/
 │       │   └── __tests__/
 │       ├── next.config.ts
@@ -34,7 +34,7 @@ red-facyt/
 │       ├── tsconfig.json
 │       └── vitest.config.mts
 ├── packages/
-│   ├── shared/     # @redfacyt/shared — FUENTE DE VERDAD (Ola 2)
+│   ├── shared/     # @redfacyt/shared — FUENTE DE VERDAD
 │   │   ├── src/
 │   │   │   ├── taxonomy/      # PostType, PostCategory, ResearchArea, PostVisibility
 │   │   │   ├── types/         # Post, User, Session, PostFilters, etc.

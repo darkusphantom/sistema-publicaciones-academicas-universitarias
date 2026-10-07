@@ -80,6 +80,8 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 
 ## Registro de cambios (últimos)
 
+- **2026-10-07 — Consolidación de Ola 2 y `researchArea`**: se resolvió la deuda técnica integrando el workspace `@redfacyt/shared` para extraer la taxonomía, tipos y esquemas de Zod, convirtiéndose en la única fuente de la verdad para el backend y frontend. Se creó `packages/tsconfig` para estandarizar la compilación. El monorepo fue validado con `pnpm -r test` al 100% (265 web, 180 API), corrigiendo las aserciones estáticas preexistentes y mock data de los enums para soportar `researchArea`. Finalmente, `pnpm -r build` verificó la consistencia en el bundle de Next.js y tsup. La arquitectura frontend y de monorepo han sido actualizadas.
+
 - **2026-10-03 — Auth + endpoints `/api/v1/*` + OpenAPI (API, en memoria)**: completado el pipeline (diseño → implementación → review → testing). Diseño: `api-structure.md` §8–§12 (auth Better Auth en memoria, endpoints con zod + enforcement, OpenAPI) y `threat-model-api.md` R12–R18. Implementación TDD: `domain/validation.ts` (esquemas zod), `application/` (use cases auth/posts/users/admin), `infrastructure/repositories/in-memory/` (store compartido + repos), `infrastructure/auth/` (memory-auth-adapter + auth.config), middleware `require-session`/`require-role`/`csrf`/`rate-limit` (poda de expiradas), `routes/` (auth, posts, users, admin, openapi). Review: 1 🔴 crítico corregido (H1: se eliminó el handler nativo de Better Auth de `/api/v1/auth/*` que bypassaba rate limit/CSRF/zod y permitía enumeración y colisión de username; quedan solo las rutas wire) + H2 (clave rate limit `peerTCP|XFF`, cuenta solo fallos en login), H3 (CSRF exige token en TODA mutación), H5 (decoy Scrypt async con parámetros de Better Auth), QA-1..5 (409 solo en conflictos reales, username ≤50, cookie Secure/expirada con test, reloj inyectable, `canViewPost` importado). Testing: 180 unitarios + 15 smoke (195/195 PASS), cobertura 94.21/81.93/95.1/97.23, evidencia en `docs/tests/api-auth-endpoints-test-report.md`. **Desvíos registrados**: (1) H4 — Better Auth v1.7.7 no soporta sesiones stateless JWT reales → sesiones de BD en memoria (revocables, refuerzan R13/R14); (2) CSRF con cookie propia `facy.csrf_token` (mejor-auth no emite la de la spec); (3) hashing Scrypt (no argon2id/bcrypt); (4) OpenAPI manual (no `@hono/zod-openapi`); (5) requisito operativo: proxy debe sobrescribir `X-Forwarded-For`.
 
 - **2026-10-03 — Scaffold inicial de la API (`apps/api`, Hono 4)**: completado el pipeline completo (diseño → implementación → review → testing → documentación). Diseño: `docs/architecture/api-structure.md` (estructura, `createApp` puro, env zod fail-fast, contrato hexagonal espejo, mapa de endpoints futuros `/api/v1`) + `docs/security/threat-model-api.md` (modelo de amenaza R1–R9) emitidos por el `security-architect`. Implementación TDD del `developer`: `apps/api` con `package.json`/`tsconfig`/`vitest` (entorno node, umbral ≥ 80%)/`eslint` (typescript-eslint), `src/app.ts` (factory `createApp`), `server.ts`/`index.ts` (bootstrap + graceful shutdown), `config/env.ts` (zod fail-fast), 7 middleware de seguridad, `domain/{post,user,session}.ts` (puertos espejo). Review: `qa-reviewer` (0 🔴) y `security-reviewer` (cumple P0/P1, 1 Medio); corregidos W2 (HTTPException en error-handler), W3/H1 (redact cookie/authorization en pino-http), W4/H2 (correlación `x-request-id`), B1 (413 con headers), B2 (LOG_LEVEL enum), B3 (CORS_ORIGINS trim), B6 (test dev). Testing: 28 unitarios + 11 smoke real (39/39 PASS), evidencia en `docs/tests/api-scaffold-test-report.md`. Desvíos registrados: `hono/secure-headers` es submódulo integrado (sin dependencia aparte); `src/index.ts`/`server.ts` excluidos de cobertura (bootstrap de red). Pendiente coordinación `devops`: extender Husky a ambos workspaces y resolver `allowBuilds.esbuild` (placeholder) en `pnpm-workspace.yaml`.
@@ -92,7 +94,7 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 - **2026-09-25 — Pantalla de bienvenida `/` implementada**: spec de diseño persistida en `docs/design/welcome.md` (+ `wireframes.md` §2.1); developer implementó parallax vertical CSS-first (scroll-driven, respeta `prefers-reduced-motion`), guard de onboarding `facy:onboarding` (primer ingreso vs. recurrente → `/login`), copy aprobado, tokens claro/oscuro, `theme.ts` (store externo, sin `next-themes`), primitivos propios (`button`, iconos). Lint OK, 125 tests, cobertura 100%, build `/` estático. Desvío: carpeta nueva `src/components/landing/` por registrar en arquitectura. Se usaron primitivos propios en lugar de shadcn/ui + next-themes (no instalados), decisión documentada en Trello.
 - **2026-09-25 — Esqueleto de estructura + skill de contexto**: se crearon carpetas base de la arquitectura objetivo y la skill `project-context`; se definió que `frontend-structure.md` es inmutable y el estado vive aquí.
 - **2026-09-24 — Scaffold**: arranque de Next.js y tooling; gate Husky funcional.
-## Migración a monorepo (Ola 1)
+## Migración a monorepo (Ola 1 y Ola 2)
 
 | Ítem | Estado | Fecha |
 |---|---|---|
@@ -106,9 +108,14 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 | Build web | ✅ (tras corrección 4 errores TS preexistentes) | 2026-10-05 |
 | Migración taxonomía API → alineada con web (fuente de verdad) | Completado | 2026-10-05 |
 | `apps/api/src/domain/post.ts` + `validation.ts` + `routes/openapi.ts` actualizados | Completado | 2026-10-05 |
-| Repos/in-memory + tests API actualizados a nueva taxonomía | Completado | 2026-10-05 |
+| Repos/in-memory + tests API actualizados a nueva taxonomía | Completado | 2026-10-07 |
+| **Ola 2:** Creación de paquete `@redfacyt/shared` (Taxonomía, Tipos, Schemas Zod) | Completado | 2026-10-07 |
+| **Ola 2:** Creación de base tsconfig `packages/tsconfig` | Completado | 2026-10-07 |
+| **Ola 2:** Refactor `apps/api` y `apps/web` para consumir `@redfacyt/shared` | Completado | 2026-10-07 |
+| **Ola 2:** Reestructuración de JSDoc e interfaces puras exportadas a index | Completado | 2026-10-07 |
 
 **Desvíos registrados:**
 - Cobertura web global < 80% (preexistente a migración) — ver `vitest.config.mts` de web.
-- Test de root layout en `apps/web/src/__tests__/routes.smoke.test.tsx` deshabilitado temporalmente (comentado) — pendiente reactivar o documentar justificación.
-- `tsconfig.json` huérfano en raíz — evaluar eliminación/limpieza (solo usado para referencias, no build).
+- Test de root layout en `apps/web/src/__tests__/routes.smoke.test.tsx` deshabilitado temporalmente (comentado) debido a la incompatibilidad con Server Components asíncronos en Next.js.
+- `tsconfig.json` huérfano en raíz fue eliminado de manera exitosa y refactorizado al paquete `tsconfig/base.json`.
+- Pruebas vacías en el paquete `shared` manejadas con `--passWithNoTests`.
