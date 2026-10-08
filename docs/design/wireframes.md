@@ -11,7 +11,8 @@ por área viven en archivos propios:
 | Feed `/feed`                  | [`wireframes_feed.md`](wireframes_feed.md) | [`wireframes_feed.md`](wireframes_feed.md) (documento único) |
 | Publicaciones `/posts/*`      | [`wireframes_posts.md`](wireframes_posts.md) | [`wireframes_posts.md`](wireframes_posts.md) (documento único) |
 | Detalle `/posts/[id]`         | [`wireframes_post_detail.md`](wireframes_post_detail.md) | [`wireframes_post_detail.md`](wireframes_post_detail.md) (documento único) |
-| Perfil, admin                 | §3.3–§3.4 de este documento               | —                       |
+| Perfil `/profile/[username]`  | [`wireframes_profile.md`](wireframes_profile.md) | [`wireframes_profile.md`](wireframes_profile.md) (documento único) |
+| Admin `/admin`                | §3.4 de este documento                   | —                       |
 
 > [!NOTE]
 > Los wireframes de la bienvenida se movieron a `wireframes_welcome.md` y los de
@@ -108,13 +109,18 @@ formulario, accesibilidad, tokens y guía de archivos— y, para el detalle, en
 
 ### 3.3 `/profile/[username]`
 
-```
-│ Avatar  Nombre Apellido       [rol badge]
-│ @username · Bio breve
-│ ─────────────────────────────
-│ Publicaciones  [＋ Nueva publicación]
-│ (cards del usuario, mismas reglas de visibilidad)
-```
+Especificación completa en [`wireframes_profile.md`](wireframes_profile.md):
+cabecera con avatar (foto o iniciales) y bio, edición **inline** de datos
+personales (nombre, apellido, correo, bio), subida y retirada de foto de perfil
+(PNG/JPG, máximo 5 MB), cambio de contraseña, y publicaciones del usuario en
+cascada vertical con las mismas reglas de visibilidad.
+
+> [!NOTE]
+> Este apartado pasó a ser un puntero por el mismo motivo que §3.1 y §3.2: el
+> esbozo ASCII que había aquí (con el correo del usuario a la vista en perfiles
+> ajenos y las publicaciones en dos columnas) fue contradicho por el diseño
+> final, que trata el correo como dato privado y prioriza la lectura vertical.
+> Ver `wireframes_profile.md` §1.3 y §10.1–§10.2 para el detalle de los cambios.
 
 ### 3.4 `/admin` (solo rol admin)
 
