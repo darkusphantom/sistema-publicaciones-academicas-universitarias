@@ -93,3 +93,17 @@ export async function deletePostAction(id: string) {
   }
 }
 
+export async function setVisibilityAction(id: string, visibility: import("@/lib/types").PostVisibility) {
+  const session = await authGateway.getSession();
+  if (!session || session.user.role !== "admin") {
+    throw new Error("No tienes permiso para cambiar la visibilidad.");
+  }
+
+  const updated = await repository.setVisibility(id, visibility, session);
+  revalidatePath("/feed");
+  revalidatePath(`/posts/${id}`);
+  revalidatePath("/profile/[username]", "page");
+  return updated;
+}
+
+

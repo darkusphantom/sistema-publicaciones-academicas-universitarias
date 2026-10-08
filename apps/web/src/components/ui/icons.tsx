@@ -248,3 +248,33 @@ export function XIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * Left arrow icon: Navigation back action affordance.
+ *
+ * @param props - Icon props.
+ * @returns The SVG element.
+ */
+export function ArrowLeftIcon({ className }: IconProps) {
+  return (
+    <svg {...ICON_BASE_PROPS} width={16} height={16} className={className}>
+      <path d="M19 12H5M12 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+/**
+ * Tag icon: Keyword/hashtag list affordance.
+ *
+ * @param props - Icon props.
+ * @returns The SVG element.
+ */
+export function TagIcon({ className }: IconProps) {
+  return (
+    <svg {...ICON_BASE_PROPS} width={16} height={16} className={className}>
+      <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l4.58-4.58c.94-.94.94-2.48 0-3.42L12 2Z" />
+      <path d="M7 7h.01" />
+    </svg>
+  );
+}
+

@@ -49,18 +49,18 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 | Scaffold API `apps/api` (Hono 4) | Monorepo pnpm (`apps/*`): `@red-facyt/api`, patrón `createApp` puro, `@hono/node-server`, config env zod fail-fast, middleware de seguridad (CORS whitelist, headers, body-limit 413, error-handler sin stack, 404 JSON, request-id, rate-limit slot), puertos hexagonales espejo del contrato frontend (`domain/{post,user,session}.ts`), `GET /api/v1/health`. TDD 28 tests + 11 smoke (39/39 PASS). Ver `docs/architecture/api-structure.md`, `docs/security/threat-model-api.md`, `docs/tests/api-scaffold-test-report.md`. | 2026-10-03 |
 | Gate Husky multi-workspace + `allowBuilds.esbuild` | `pnpm-workspace.yaml` con `allowBuilds.esbuild: true` (era placeholder); `.husky/pre-commit` cubre web (`pnpm lint`) + API (`pnpm --filter @red-facyt/api lint`); `eslint.config.mjs` raíz ignora `apps/**` (cada workspace tiene su config). `docs/husky.md` actualizado. | 2026-10-03 |
 | Auth + endpoints `/api/v1/*` + OpenAPI (API) | Better Auth v1.7.7 en memoria (sesiones de BD revocables, no stateless — desvío H4), `emailAndPassword` con Scrypt, `additionalFields` (username/givenName/familyName/role con `input:false`, registro crea solo `estudiante`). Rutas wire `/auth/{register,login,session,logout}` + CSRF doble envío (`facy.csrf_token`) + rate limit (IP+username, 429). Endpoints: feed `GET /posts` (replica `visibility.ts`/`filters.ts`), CRUD posts con enforcement propietario/admin (`publishedAt` inmutable), `/users/{authors,:username}` (email redactado ajeno), `/admin/users/:id/role`, `/admin/posts/:id/visibility`. Validación zod por ruta, rol fresco por petición (R14). OpenAPI manual: `/api/v1/openapi.json` + `/docs`, bloqueado en prod. TDD 180 tests + 15 smoke (195/195 PASS). Ver `docs/tests/api-auth-endpoints-test-report.md`. | 2026-10-03 |
+| Implementación completa de vistas protegidas | `/posts/[id]` (detalle de publicación, `PostDetail`, `PostDetailPage`, `setVisibilityAction`), `/posts/new` y `/posts/[id]/{edit,delete}` páginas de ruta reales/fallback standalone, `/profile` y `/profile/[username]` (perfil de usuario y publicaciones propias), y `/admin` (panel de gestión de usuarios, asignación de roles y moderación con guard de acceso). Módulos `src/lib/taxonomy.ts` y `src/lib/keywords.ts`. | 2026-10-08 |
 
 ## En progreso
 
 | Ítem | Nota |
 | --- | --- |
-| Fase Frontend (datos estáticos) | En curso — ver tarjeta Trello «Fase Frontend» |
+| Fase Frontend (datos estáticos) | Completada — todas las vistas protegidas del mapa de navegación implementadas y probadas. |
 
 ## Pendiente
 
 | Ítem | Depende de | Nota |
 | --- | --- | --- |
-| Reescribir smoke tests con `vi.mock` | pantallas reales | repos/`next-themes`/`next/navigation` |
 | Ajustar umbrales/exclusiones `vitest.config.mts` + `typecheck` en Husky | pantallas + tests | p. ej. excluir `ui/**`/`app/**`, `lib/`/`data/` ≥ 90% |
 | Backend PostgreSQL + auth persistente | endpoints API en memoria | Adaptadores `infrastructure/repositories/postgres/` (mismo contrato), migraciones, `DATABASE_URL` requerida en prod; migrar sesiones en memoria a BD |
 | Integración frontend ↔ API | endpoints API | Sustituir repositorios estáticos (`post-repository.static.ts`, `auth-gateway.static.ts`) por consumo de la API + doble envío CSRF (obtener cookie vía GET antes de mutar) |
@@ -71,14 +71,15 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 
 | Suite | Resultado | Cobertura |
 | --- | --- | --- |
-| Smoke de rutas + `format` | 6/6 pasan (actualizado para FeedPage async) | — |
-| Dominio del feed (`visibility` + `filters` + contract) | 68/68 pasan | 100% |
-| Componentes del feed (`PostCard` + `LoadMore` + `EmptyState`) | 18/18 pasan | — |
-| Suite completa web (25 archivos, 237 tests) | 237/237 pasan | ≥ 80% global |
-| Suite API `apps/api` (3 archivos, 28 tests) + smoke real | 28/28 pasan; smoke 11/11 (39/39 total) | 100% stmts/funcs/lines, 88.88% branches |
-| Suite API auth+endpoints (16 archivos, 180 tests) + smoke real | 180/180 pasan; smoke 15/15 (195/195 total) | 94.21% stmts, 81.93% branches, 95.1% funcs, 97.23% lines |
+| Smoke de rutas (cobertura total de 10 rutas) | 10/10 pasan | — |
+| Dominio del feed + taxonomía (`visibility` + `filters` + `taxonomy` + contract) | 74/74 pasan | 100% |
+| Componentes UI y Vistas web (`apps/web`, 31 archivos, 275 tests) | 275/275 pasan | ≥ 80% global |
+| API `apps/api` (16 archivos, 179 tests) | 179/179 pasan | 94.21% stmts, 81.93% branches, 95.1% funcs |
+| Monorepo Total (47 archivos de test) | 454/454 pasan | 100% PASS |
 
 ## Registro de cambios (últimos)
+
+- **2026-10-08 — Implementación completa de Vistas Protegidas (`/posts/[id]`, `/posts/new`, `/profile/[username]`, `/admin`)**: Se identificó y resolvió la falta de rutas y vistas protegidas. Se creó `src/lib/taxonomy.ts` como fuente única de verdad para la taxonomía y `src/lib/keywords.ts` para extracción de hashtags. Se implementó la vista de detalle de publicación (`/posts/[id]`, `PostDetail`), las páginas de fallback standalone (`/posts/new`, `/posts/[id]/edit`, `/posts/[id]/delete`), la vista de perfil (`/profile` y `/profile/[username]`, `UserProfileView`) y la vista de administración (`/admin`, `AdminView` con guard de rol). Se extendieron los smoke tests a 10 rutas. Resultado: `pnpm -r test` 454/454 PASS, `pnpm -r build` exitoso sin errores y `pnpm -r lint` 0 advertencias.
 
 - **2026-10-08 — Cierre de Migración Monorepo (Ola 1 + Ola 2) y Formalización ADR-001**: Se completó la formalización de la arquitectura monorepo registrando `docs/adr/ADR-001-monorepo-layout.md` y vinculándolo en `docs/architecture/monorepo-structure.md`. Se validaron todas las suites con `pnpm -r lint` (0 warnings), `pnpm -r test` (443/443 PASS en shared, API y web) y `pnpm -r build` (builds tsup y Next.js 16 exitosos). Se actualizaron la evidencia en `docs/tests/monorepo-migration-test-report.md` y el checklist en `docs/TASK-MIGRACION-MONOREPO.md`.
 

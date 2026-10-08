@@ -1,16 +1,16 @@
+import { UserProfileView } from "@/components/profile/user-profile-view";
+
+type ProfilePageProps = {
+  params: Promise<{ username: string }> | { username: string };
+};
+
 /**
- * User profile page (authenticated main route group).
+ * User profile page component for route `/profile/[username]`.
  *
- * Placeholder for the user profile screen. The full profile
- * experience is implemented in the frontend phase.
- *
- * @returns The profile page section.
+ * @param props - Component props containing route params.
+ * @returns The user profile view.
  */
-export default function ProfilePage() {
-  return (
-    <main>
-      <h1>Profile</h1>
-      <p>User profile placeholder.</p>
-    </main>
-  );
+export default async function ProfilePage({ params }: ProfilePageProps) {
+  const resolvedParams = await params;
+  return <UserProfileView targetUsername={resolvedParams.username} />;
 }

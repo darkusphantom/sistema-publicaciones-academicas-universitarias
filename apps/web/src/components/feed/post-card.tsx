@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { LockIcon } from "@/components/ui/icons";
 import { formatDate, truncateText, extractKeywords } from "@/lib/format";
-import type { Post, PostCategory, PostType, ResearchArea, PostVisibility, AuthorOption } from "@/lib/types";
+import type { Post, AuthorOption } from "@/lib/types";
 
 /** Props accepted by {@link PostCard}. */
 export type PostCardProps = {
@@ -15,81 +15,14 @@ export type PostCardProps = {
   author: AuthorOption | null;
 };
 
-// ─── Label maps ───────────────────────────────────────────────────────────────
+import {
+  CATEGORY_LABELS,
+  TYPE_LABELS,
+  AREA_LABELS,
+  VISIBILITY_LABELS,
+  VISIBILITY_NOTES,
+} from "@/lib/taxonomy";
 
-const CATEGORY_LABELS: Record<PostCategory, string> = {
-  matematicas: "Matemáticas",
-  biologia: "Biología",
-  quimica: "Química",
-  fisica: "Física",
-  computacion: "Computación",
-  "crecimiento-profesional": "Desarrollo profesional",
-};
-
-const TYPE_LABELS: Record<PostType, string> = {
-  noticias: "Noticias",
-  eventos: "Eventos",
-  defensas: "Defensas",
-  investigacion: "Investigación",
-  convocatorias: "Convocatorias",
-  post: "",
-  articulo: "",
-  ensenanza: ""
-};
-
-const AREA_LABELS: Record<ResearchArea, string> = {
-  general: "General",
-  estadistica: "Estadística",
-  probabilidad: "Probabilidad",
-  optimizacion: "Optimización",
-  "matematicas-aplicadas": "Matemáticas Aplicadas",
-  "modelado-matematico": "Modelado Matemático",
-  biotecnologia: "Biotecnología",
-  bioquimica: "Bioquímica",
-  genetica: "Genética",
-  microbiologia: "Microbiología",
-  ecologia: "Ecología",
-  bioinformatica: "Bioinformática",
-  "quimica-analitica": "Química Analítica",
-  "quimica-organica": "Química Orgánica",
-  "quimica-inorganica": "Química Inorgánica",
-  fisicoquimica: "Fisicoquímica",
-  "quimica-medioambiental": "Química Medioambiental",
-  "fisica-computacional": "Física Computacional",
-  "fisica-de-materiales": "Física de Materiales",
-  astronomia: "Astronomía",
-  "fisica-nuclear": "Física Nuclear",
-  "mecanica-de-fluidos": "Mecánica de Fluidos",
-  "inteligencia-artificial": "Inteligencia Artificial",
-  "aprendizaje-automatico": "Aprendizaje Automático",
-  "ciencia-de-datos": "Ciencia de Datos",
-  "desarrollo-web": "Desarrollo Web",
-  "ingenieria-software": "Ingeniería de Software",
-  "redes-telecomunicaciones": "Redes y Telecomunicaciones",
-  "seguridad-informatica": "Seguridad Informática",
-  "sistemas-distribuidos": "Sistemas Distribuidos",
-  "bases-de-datos": "Bases de Datos",
-  "computacion-grafica": "Computación Gráfica",
-  robotica: "Robótica",
-  "arquitectura-computadores": "Arquitectura de Computadores",
-  "gestion-proyectos": "Gestión de Proyectos",
-  liderazgo: "Liderazgo y Gestión de Equipos",
-  emprendimiento: "Emprendimiento",
-  "comunicacion-profesional": "Comunicación Profesional",
-  "etica-profesional": "Ética Profesional",
-};
-
-const VISIBILITY_LABELS: Record<PostVisibility, string | null> = {
-  publicado: null, // no badge shown for published posts
-  borrador: "Borrador",
-  oculto: "Oculto",
-};
-
-const VISIBILITY_NOTES: Record<PostVisibility, string | null> = {
-  publicado: null,
-  borrador: "Solo tú ves esta publicación.",
-  oculto: "Oculta por un administrador.",
-};
 
 /**
  * Editorial post card for the feed.

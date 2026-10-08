@@ -4,40 +4,43 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "@/app/(auth)/login/page";
 import RegisterPage from "@/app/(auth)/register/page";
 import LandingPage from "@/app/(landing)/page";
-// import RootLayout from "@/app/layout";
 import FeedPage from "@/app/(main)/feed/page";
+import PostDetailPage from "@/app/(main)/posts/[id]/page";
+import NewPostPage from "@/app/(main)/posts/new/page";
+import EditPostPage from "@/app/(main)/posts/[id]/edit/page";
+import DeletePostPage from "@/app/(main)/posts/[id]/delete/page";
 import ProfilePage from "@/app/(main)/profile/[username]/page";
+import AdminPage from "@/app/(main)/admin/page";
 
-/**
- * The welcome screen redirects recurrent visitors with the App Router client
- * navigation, which is not available outside the router runtime.
- */
-const { replace, push } = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
+const { replace, push, back } = vi.hoisted(() => ({
+  replace: vi.fn(),
+  push: vi.fn(),
+  back: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace, push }),
+  useRouter: () => ({ replace, push, back }),
   usePathname: () => "/feed",
+  notFound: () => {
+    throw new Error("NEXT_NOT_FOUND");
+  },
 }));
 
 vi.mock("@/lib/session/session-provider", () => ({
   SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useSession: () => ({
     status: "authenticated",
-    session: { user: { id: "u-3", username: "m.rivas", role: "estudiante" }, expiresAt: "2099-01-01T00:00:00Z" },
+    session: { user: { id: "u-1", username: "admin", role: "admin" }, expiresAt: "2099-01-01T00:00:00Z" },
     signOut: vi.fn(),
   }),
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...props }: { href: string; children: React.ReactNode;[key: string]: unknown }) => (
+  default: ({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: unknown }) => (
     <a href={href} {...props}>{children}</a>
   ),
 }));
 
-/**
- * `next/font` is resolved by the Next.js compiler, which does not run under
- * Vitest: the stub below keeps the root layout importable.
- */
 vi.mock("next/font/google", () => ({
   Source_Serif_4: () => ({ variable: "--font-facyt-serif", className: "" }),
 }));
@@ -49,21 +52,11 @@ beforeEach(() => {
 
 /**
  * Smoke tests that render every route of the scaffold.
- * These guarantee the App Router mounts without errors.
+ * Guarantee that all App Router pages mount without errors.
  */
 describe("route smoke tests", () => {
-  /**it("renders the root layout with its children", async () => {
-    // Componente Server asíncrono o síncrono en Next 16
-    const Layout = RootLayout as unknown as (props: any) => Promise<JSX.Element> | JSX.Element;
-    const layoutElement = await Layout({ children: <p>layout child</p> });
-    render(layoutElement);
-
-    expect(screen.getByText("layout child")).toBeInTheDocument();
-  });*/
-
   it("renders the landing page", () => {
     render(<LandingPage />);
-
     expect(
       screen.getByRole("heading", { level: 1, name: /Red FaCyT/i }),
     ).toBeInTheDocument();
@@ -71,13 +64,11 @@ describe("route smoke tests", () => {
 
   it("renders the login page", async () => {
     render(<LoginPage />);
-
     expect(await screen.findByRole("heading", { name: "Iniciar sesión" })).toBeInTheDocument();
   });
 
   it("renders the register page", async () => {
     render(<RegisterPage />);
-
     expect(
       await screen.findByRole("heading", { name: "Crear cuenta" }),
     ).toBeInTheDocument();
@@ -85,15 +76,40 @@ describe("route smoke tests", () => {
 
   it("renders the feed page", async () => {
     render(await FeedPage({ searchParams: Promise.resolve({}) }));
-
     expect(await screen.findByRole("heading", { name: "Publicaciones" })).toBeInTheDocument();
   });
 
-  it("renders the profile page", () => {
-    render(<ProfilePage />);
+  it("renders the post detail page", async () => {
+    render(await PostDetailPage({ params: Promise.resolve({ id: "post-1" }) }));
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
+  });
 
+  it("renders the new post page", () => {
+    render(<NewPostPage />);
+    expect(screen.getByRole("heading", { name: "Crear publicación" })).toBeInTheDocument();
+  });
+
+  it("renders the edit post page", async () => {
+    render(await EditPostPage({ params: Promise.resolve({ id: "post-1" }) }));
+    expect(screen.getByRole("heading", { name: "Editar publicación" })).toBeInTheDocument();
+  });
+
+  it("renders the delete post page", async () => {
+    render(await DeletePostPage({ params: Promise.resolve({ id: "post-1" }) }));
+    expect(screen.getByRole("heading", { name: /¿Eliminar esta publicación\?/i })).toBeInTheDocument();
+  });
+
+  it("renders the profile page", async () => {
+    render(await ProfilePage({ params: Promise.resolve({ username: "m.rivas" }) }));
     expect(
-      screen.getByRole("heading", { name: "Profile" }),
+      await screen.findByRole("heading", { name: /Publicaciones/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the admin page", () => {
+    render(<AdminPage />);
+    expect(
+      screen.getByRole("heading", { name: "Panel de Administración" }),
     ).toBeInTheDocument();
   });
 });
