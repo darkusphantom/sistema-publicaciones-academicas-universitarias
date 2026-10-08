@@ -57,6 +57,7 @@ Archivo **dinámico** de seguimiento: refleja el estado real de implementación.
 | Ítem | Nota |
 | --- | --- |
 | Fase Frontend (datos estáticos) | Completada — todas las vistas protegidas del mapa de navegación implementadas y probadas. |
+| Implementación de perfil de usuario | Se implementaron las acciones y validaciones necesarias para la edición de perfil, cambio de contraseña y subida de avatar, integradas con los repositorios estáticos. |
 
 ## Pendiente
 
