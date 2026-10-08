@@ -28,6 +28,7 @@ export function Avatar({ user, size = "md", className }: AvatarProps) {
     >
       <span aria-hidden="true">{initials}</span>
       {hasPhoto && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={user.avatarUrl!}
           alt=""

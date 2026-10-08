@@ -96,6 +96,7 @@ export class StaticAuthGateway implements AuthGateway {
   }
 
   /**TODO: Implementar la logica para cambiar la contrasena */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async changePassword(_currentPassword: string, _newPassword: string): Promise<AuthResult> {
     const session = await this.getSession();
     if (!session) {
