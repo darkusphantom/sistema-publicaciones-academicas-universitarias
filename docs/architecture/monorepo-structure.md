@@ -46,4 +46,8 @@ red-facyt/
 ├── docs/
 │   ├── architecture/
 │   └── ...
-└── pnpm-workspace.yaml  # incluye apps/* (+ packages/* tras Ola 2)
+└── pnpm-workspace.yaml  # incluye apps/* y packages/*
+
+## Decisiones de Arquitectura (ADR)
+- [`ADR-001: Estructura y Layout del Monorepo`](../adr/ADR-001-monorepo-layout.md)
+

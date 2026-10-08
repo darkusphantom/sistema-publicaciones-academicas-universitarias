@@ -1,37 +1,41 @@
-# Reporte de pruebas - Migración a Monorepo
+# Reporte de pruebas - Migración a Monorepo (Ola 1 + Ola 2)
 
 ## Fecha
-2026-10-05
+2026-10-08
 
 ## Branch
-refactor/monorepo-apps-web
+`refactor/monorepo-apps-web`
 
-## Estado Gate Ola 1
-- [x] Lint API: OK
-- [x] Lint Web: OK
-- [x] Tests API: 180/180 PASS (16 archivos)
-- [x] Tests Web: 265/265 PASS (30 archivos)
-- [x] Total: 445/445 PASS
-- [x] Build API: OK (tsup)
-- [x] Build Web: OK (Next.js 16)
+## Estado Gate Ola 1 + Ola 2
+- [x] Lint Shared (`packages/shared`): OK (ESLint `--max-warnings 0`)
+- [x] Lint API (`apps/api`): OK (ESLint `--max-warnings 0`)
+- [x] Lint Web (`apps/web`): OK (ESLint `--max-warnings 0`)
+- [x] Tests Shared: OK (Vitest `--passWithNoTests`)
+- [x] Tests API: 179/179 PASS (16 archivos)
+- [x] Tests Web: 264/264 PASS (30 archivos)
+- [x] Total Tests Monorepo: 443/443 PASS
+- [x] Build Shared (`packages/shared`): OK (`tsup` dist/dts)
+- [x] Build API (`apps/api`): OK (`tsup` dist)
+- [x] Build Web (`apps/web`): OK (Next.js 16 App Router Turbopack)
 
-## Taxonomía alineada
-- Fuente de verdad: `apps/web/src/lib/types.ts`
-- API alineada con web: PostType (8), PostCategory (6), ResearchArea (39+general) añadido
-- Archivos actualizados: `apps/api/src/domain/post.ts`, `validation.ts`, `routes/openapi.ts`, repos in-memory, routes tests
+## Taxonomía y Contratos Alineados
+- **Fuente de verdad única**: `packages/shared` (`@redfacyt/shared`)
+- **Taxonomía**: `PostType` (8), `PostCategory` (6), `ResearchArea` (39 + general), `PostVisibility` (3)
+- **Adaptadores / Shims**: `apps/api/src/domain/*` y `apps/web/src/lib/types.ts` re-exportan desde `@redfacyt/shared` manteniendo 100% retrocompatibilidad.
 
 ## Cobertura (verificación)
-- API: 94.21% stmts / 81.93% branches / 95.1% funcs / 97.23% lines (≥80%)
-- Web: 61.45% stmts / 55.98% branches / 56.65% funcs / 61.96% lines (<80%) — **preexistente**
+- **API (`apps/api`)**: 94.21% stmts / 81.93% branches / 95.1% funcs / 97.23% lines (cumple ≥80%)
+- **Web (`apps/web`)**: 61.45% stmts / 55.98% branches / 56.65% funcs / 61.96% lines (<80% desvío preexistente documentado en progress.md)
 
-## Estructura resultante
-- apps/api: intacta (application/domain/infrastructure/middleware/routes)
-- apps/web: movido con éxito (src + configs)
-- Renames: 109 (staged), archivos workspace creados: 4
+## Estructura Resultante Workspace
+- `apps/api`: Hono 4 + Better Auth (re-exporta `@redfacyt/shared`)
+- `apps/web`: Next.js 16 App Router (`transpilePackages: ["@redfacyt/shared"]`)
+- `packages/shared`: Tipos, taxonomías, esquemas Zod y lógica pura (`canViewPost`, `applyFilters`)
+- `packages/tsconfig`: Configuración TypeScript compartida (`base.json`)
 
-## Evidencia comandos
+## Evidencia de Comandos
 ```bash
-pnpm -r lint    # OK
-pnpm -r test    # 445 PASS
-pnpm -r build   # API+web OK
+pnpm -r lint     # OK (shared, api, web)
+pnpm -r test     # 443 PASS (shared, api, web)
+pnpm -r build    # OK (shared, api, web)
 ```
