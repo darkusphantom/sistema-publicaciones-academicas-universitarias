@@ -12,3 +12,14 @@ export {
   nameSchema,
   idSchema,
 } from "./auth";
+
+export {
+  bioSchema,
+  avatarFileSchema,
+  avatarDataUrlSchema,
+  UpdateProfileSchema,
+  ChangePasswordSchema,
+  AVATAR_MAX_BYTES,
+  AVATAR_MIME_TYPES,
+  AVATAR_DATA_URL_MAX_CHARS,
+} from "./profile";

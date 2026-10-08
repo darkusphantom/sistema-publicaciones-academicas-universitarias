@@ -75,6 +75,8 @@ export const userSchema = z
     familyName: z.string(),
     role: z.enum(["estudiante", "profesor", "admin"] as const),
     createdAt: z.string(),
+    bio: z.string().nullable().optional(),
+    avatarUrl: z.string().nullable().optional(),
   })
   .strict();
 

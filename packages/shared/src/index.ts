@@ -90,6 +90,17 @@ export {
   SetUserRoleSchema,
 } from "./schemas/auth";
 
+export {
+  bioSchema,
+  AVATAR_MAX_BYTES,
+  AVATAR_MIME_TYPES,
+  avatarFileSchema,
+  AVATAR_DATA_URL_MAX_CHARS,
+  avatarDataUrlSchema,
+  UpdateProfileSchema,
+  ChangePasswordSchema,
+} from "./schemas/profile";
+
 // ─── Lógica de dominio puro ───────────────────────────────────────────────────
 
 export {

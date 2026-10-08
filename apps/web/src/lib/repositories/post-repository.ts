@@ -1,4 +1,4 @@
-import type { AuthorOption, Post, PostFilters } from "@/lib/types";
+import type { AuthorOption, Post, PostFilters, User } from "@/lib/types";
 import type { Session } from "@/lib/types";
 
 /**
@@ -98,6 +98,10 @@ export interface PostRepository {
 /**
  * Hexagonal port for user data access (read-only subset used by the feed).
  */
+export type UpdateProfilePatch = Partial<
+  Pick<User, "givenName" | "familyName" | "email" | "bio" | "avatarUrl">
+>;
+
 export interface UserRepository {
   /**
    * Returns the list of users who have at least one publication in the system.
@@ -109,4 +113,13 @@ export interface UserRepository {
    * @returns Author options sorted by full name.
    */
   listAuthors(): Promise<AuthorOption[]>;
+  
+  /** Devuelve un usuario por username, o `null`. */
+  findByUsername(username: string): Promise<User | null>;
+  
+  /**
+   * Aplica un parche de datos personales. Devuelve el usuario actualizado
+   * o `null` si el id no existe. Los campos fuera del parche no cambian.
+   */
+  update(id: string, patch: UpdateProfilePatch): Promise<User | null>;
 }

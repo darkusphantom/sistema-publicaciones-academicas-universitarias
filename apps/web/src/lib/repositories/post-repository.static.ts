@@ -2,7 +2,7 @@ import { mockPosts } from "@/data/posts";
 import { mockUsers } from "@/data/users";
 import { applyFilters } from "@/lib/filters";
 import { filterVisiblePosts } from "@/lib/visibility";
-import type { AuthorOption, Post } from "@/lib/types";
+import type { AuthorOption, Post, User } from "@/lib/types";
 import type {
   PageOptions,
   PostPage,
@@ -154,5 +154,25 @@ export class StaticUserRepository implements UserRepository {
     );
 
     return authors;
+  }
+
+  async findByUsername(username: string): Promise<User | null> {
+    const user = mockUsers.find(
+      (u) => u.username.toLowerCase() === username.toLowerCase()
+    );
+    return user ? { ...user } : null;
+  }
+
+  async update(id: string, patch: import("./post-repository").UpdateProfilePatch): Promise<User | null> {
+    const idx = mockUsers.findIndex((u) => u.id === id);
+    if (idx === -1) return null;
+
+    const updatedUser = {
+      ...mockUsers[idx],
+      ...patch,
+    };
+    mockUsers[idx] = updatedUser;
+
+    return { ...updatedUser };
   }
 }

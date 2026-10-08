@@ -14,6 +14,14 @@ export type User = {
   familyName: string;
   role: UserRole;
   createdAt: string;
+  /** Breve presentación personal, máx. 160 caracteres. `null` = sin bio. */
+  bio?: string | null;
+  /**
+   * Foto de perfil. `null` = sin foto (se usan las iniciales).
+   * Solo admite data URL validado (fase estática) o ruta relativa `/uploads/…`
+   * (futuro). Nunca una URL absoluta externa (§2.9).
+   */
+  avatarUrl?: string | null;
 };
 
 /**

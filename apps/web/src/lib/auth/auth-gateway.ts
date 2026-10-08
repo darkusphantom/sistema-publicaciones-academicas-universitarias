@@ -13,4 +13,9 @@ export interface AuthGateway {
   getSession(): Promise<Session | null>;
   /** Ends the active user session. */
   signOut(): Promise<void>;
+  /**
+   * Cambia la contraseña del usuario de la sesión actual.
+   * `currentPassword` debe verificar contra el hash guardado.
+   */
+  changePassword(currentPassword: string, newPassword: string): Promise<AuthResult>;
 }

@@ -37,18 +37,30 @@ export class StaticAuthGateway implements AuthGateway {
     const email = credentials.get("email")?.toString().toLowerCase() || "";
     const givenName = credentials.get("given-name")?.toString() || "";
     const familyName = credentials.get("family-name")?.toString() || "";
-    
+
     const existingEmail = mockUsers.find(u => u.email.toLowerCase() === email);
     if (existingEmail) {
-      return { 
-        success: false, 
-        error: "No pudimos crear la cuenta. Intenta de nuevo.", 
-        fieldErrors: { email: "Ya existe una cuenta con ese correo." } 
+      return {
+        success: false,
+        error: "No pudimos crear la cuenta. Intenta de nuevo.",
+        fieldErrors: { email: "Ya existe una cuenta con ese correo." }
       };
     }
 
+    const newUser = {
+      id: `u-${Date.now()}`,
+      username: `${givenName.toLowerCase()}.${familyName.toLowerCase()}`,
+      email,
+      givenName,
+      familyName,
+      role: "estudiante" as const,
+      createdAt: new Date().toISOString(),
+    };
+
+    mockUsers.push(newUser);
+
     const session: Session = {
-      user: { id: `u-${Date.now()}`, username: `${givenName.toLowerCase()}.${familyName.toLowerCase()}`, role: "estudiante" },
+      user: { id: newUser.id, username: newUser.username, role: newUser.role },
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     };
 
@@ -61,7 +73,7 @@ export class StaticAuthGateway implements AuthGateway {
 
   async getSession(): Promise<Session | null> {
     if (typeof window === "undefined") return null;
-    
+
     const stored = localStorage.getItem(SESSION_KEY);
     if (!stored) return null;
 
@@ -81,5 +93,15 @@ export class StaticAuthGateway implements AuthGateway {
     if (typeof window !== "undefined") {
       localStorage.removeItem(SESSION_KEY);
     }
+  }
+
+  /**TODO: Implementar la logica para cambiar la contrasena */
+  async changePassword(_currentPassword: string, _newPassword: string): Promise<AuthResult> {
+    const session = await this.getSession();
+    if (!session) {
+      return { success: false, error: "No hay sesión activa." };
+    }
+    // Static phase limitation: success is simulated, current password is not verified.
+    return { success: true, session };
   }
 }
