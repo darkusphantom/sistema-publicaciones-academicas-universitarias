@@ -1,7 +1,7 @@
 # Vista de perfil `/profile/[username]` — Red FaCyT
 
 > [!NOTE]
-> Documento de fase de diseño. Fecha: 2026-10-08.
+> Documento de fase de diseño. Fecha: 2026-10-08. Revisado por `security-architect` el 2026-10-08 (mejoras de seguridad aplicadas).
 > Sustituye el esquema mínimo de [`wireframes.md`](wireframes.md) §3.3, que pasa a
 > puntero de este documento (mismo patrón que siguió el feed con
 > [`wireframes_feed.md`](wireframes_feed.md)). Amplía la vista de solo lectura
@@ -78,7 +78,11 @@ export type User = {
   createdAt: string;
   /** Breve presentación personal, máx. 160 caracteres. `null` = sin bio. */
   bio?: string | null;
-  /** Ruta/URL de la foto de perfil. `null` = sin foto (se usan las iniciales). */
+  /**
+   * Foto de perfil. `null` = sin foto (se usan las iniciales).
+   * Solo admite data URL validado (fase estática) o ruta relativa `/uploads/…`
+   * (futuro). Nunca una URL absoluta externa (§2.9).
+   */
   avatarUrl?: string | null;
 };
 ```
@@ -113,6 +117,24 @@ export const avatarFileSchema = z
   })
   .refine((file) => file.size <= AVATAR_MAX_BYTES, { message: "too_large" });
 
+/**
+ * Tope del data URL que viaja en `avatarUrl` (fase estática).
+ * Base64 infla ~33%: `ceil(AVATAR_MAX_BYTES * 4 / 3)`.
+ */
+export const AVATAR_DATA_URL_MAX_CHARS = Math.ceil((AVATAR_MAX_BYTES * 4) / 3);
+
+/** Prefijos de data URL admitidos en `avatarUrl` (§2.1, §2.9). */
+const AVATAR_DATA_URL_PREFIXES = ["data:image/png;base64,", "data:image/jpeg;base64,"];
+
+/** `avatarUrl` como data URL validado: prefijo blanco + tope de longitud. */
+export const avatarDataUrlSchema = z
+  .string()
+  .max(AVATAR_DATA_URL_MAX_CHARS, { message: "too_large" })
+  .refine(
+    (value) => AVATAR_DATA_URL_PREFIXES.some((prefix) => value.startsWith(prefix)),
+    { message: "invalid_type" },
+  );
+
 /** Cuerpo de edición de perfil: solo campos personales, todo opcional. */
 export const UpdateProfileSchema = z
   .object({
@@ -120,6 +142,7 @@ export const UpdateProfileSchema = z
     familyName: nameSchema.optional(),
     email: emailSchema.optional(),
     bio: bioSchema.nullish(),
+    avatarUrl: avatarDataUrlSchema.nullish(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: "empty_patch" });
@@ -192,15 +215,20 @@ export interface AuthGateway {
 ```
 
 > [!WARNING]
-> **Limitación honesta de la fase estática.** `StaticAuthGateway` no guarda
-> contraseñas (`src/data/users.ts`: *"Credentials are strictly NOT stored
-> here"*) y su `signIn` acepta cualquier contraseña no vacía si el usuario
-> existe. En consecuencia, la implementación estática de `changePassword`
-> valida los **formatos** (§2.2) y simula éxito; **no puede verificar la
-> contraseña actual**. La verificación real llega con argon2id en el backend
-> (`api-structure.md` §8.2). El diseño no oculta esto: el formulario sí pide la
-> contraseña actual (la experiencia no cambia al pasar a backend), y el
-> comportamiento diferido queda anotado aquí y en `progress.md`.
+> **Limitación honesta de la fase estática — y requisito de release.**
+> `StaticAuthGateway` no guarda contraseñas (`src/data/users.ts`: *"Credentials
+> are strictly NOT stored here"*) y su `signIn` acepta cualquier contraseña no
+> vacía si el usuario existe. En consecuencia, la implementación estática de
+> `changePassword` valida los **formatos** (§2.2) y simula éxito; **no puede
+> verificar la contraseña actual**.
+>
+> **Requisito de release:** la implementación **real** de `changePassword`
+> (tanto `AuthGateway` como el endpoint `PATCH /api/v1/…`) **queda deshabilitada**
+> hasta que un backend verifique `currentPassword` contra el hash argon2id
+> (`api-structure.md` §8.2). La simulación de la fase estática es **solo
+> demostración** y no debe promocionarse a producción. El formulario sí pide la
+> contraseña actual desde el primer día (la experiencia no cambia al pasar a
+> backend); lo diferido es únicamente la verificación. Ver también §2.9.
 
 ### 2.5 Persistencia en la fase estática
 
@@ -261,6 +289,26 @@ tamaño de nuevo; §2.8).
 | Imagen gigante (DoS)            | 5 MB en cliente y servidor; el body-limit global de la API (100 KB) se abre **solo** para la ruta de uploads.                                        |
 | Fuga de PII ajena               | El perfil ajeno no pinta correo (§3.1, §10.1); la API futura sigue redactando además (R18).                                                          |
 | Contraseña robada/mal gestionada| Política `auth.md` (8–128, sin composición), `autocomplete` correcto, sin loguear valores. **`security-architect` debe revisar esta sección antes de implementar** (joya P0 credenciales, `crown-jewels.md` §3). |
+
+### 2.9 Contrato de seguridad para el backend (pendiente — no aplica en fase estática)
+
+> [!IMPORTANT]
+> Este apartado **no bloquea** la implementación de la fase estática (datos en
+> memoria, sin backend). Es el checklist que el `developer` (fase backend),
+> `blue-team` y `red-team` **deben exigir** al migrar esta pantalla a la API
+> real. Cada ítem procede de un hallazgo de la revisión de `security-architect`
+> (2026-10-08); ninguno se ha implementado aún porque no existe backend al que
+> aplicarlo.
+
+| Ítem | Requisito | Hallazgo |
+| ---- | --------- | -------- |
+| Rate limit en cambio de contraseña | El endpoint real de `changePassword` debe aplicar rate limit (reutilizar el mecanismo ya existente en la API). Motivo: con una sesión robada, un atacante puede fuerza-brutear la "contraseña actual" para escalar a credencial completa. | PR-4 |
+| Rate limit en subida de uploads | El futuro `POST /api/v1/uploads` debe limitar tasa y tamaño por usuario (además del body-limit global), para evitar subida masiva o denegación por almacenamiento. | PR-4 |
+| Magic bytes + re-codificación de imagen | El servidor **no** confía en el `Content-Type` ni en el `File.type`: valida los magic bytes del archivo y, preferiblemente, lo re-codifica (p. ej. con `sharp`), lo que elimina a la vez payloads maliciosos ocultos y los metadatos EXIF (GPS, dispositivo) por privacidad. | PR-5 |
+| Restricción de `avatarUrl` | El backend solo persiste `avatarUrl` como **ruta relativa** `/uploads/…` (o `null`). Nunca una URL absoluta externa: prevenir SSRF (si el servidor la proxyea) y fuentes de contenido no controladas en el `<img>`. | PR-3 |
+| CSP `img-src 'self'` | Cuando existan uploads reales, la Content-Security-Policy global debe servir imágenes **solo** del propio origen (más `data:` mientras se usen data URLs). Reforzar `X-Content-Type-Options: nosniff` (ya global). | PR-8 |
+| Unicidad de correo | Un `PATCH` que cambie el email a uno ya registrado debe devolver `409` **genérico** (sin revelar a quién pertenece, anti-enumeración R18). Verificación del correo nuevo: fuera de MVP, anotada como futuro. | PR-7 |
+| CSRF | Las mutaciones de perfil heredan el CSRF por doble envío ya implementado en la API (`facy.csrf_token`); ningún endpoint de esta pantalla queda exento. | (ya existente) |
 
 ---
 
@@ -387,8 +435,17 @@ propio `<form>` y su propio envío. Dos columnas en `sm+`, una en móvil.
 
 ### 3.5 Sin publicaciones / usuario inexistente
 
-Los dos estados **no cambian**: `EmptyState` con copy propio (ya implementado)
-y `EmptyState` "Usuario no encontrado" con CTA "Volver al feed".
+Los dos estados **no cambian** en estructura: `EmptyState` con copy propio (ya
+implementado) y `EmptyState` de perfil inexistente con CTA "Volver al feed".
+
+> [!IMPORTANT]
+> El copy del perfil inexistente **cambia** por anti-enumeración (R18). La
+> implementación actual pinta *"No existe ningún usuario registrado con el
+> nombre @X"*, que **confirma** que el username no existe y convierte el perfil
+> en un oráculo de enumeración para scraping de cuentas. El copy nuevo es
+> genérico y **no distingue** entre "usuario no existe" y "usuario existe pero
+> sin permiso para verlo": **"No pudimos encontrar ese perfil."**
+> Ver hallazgo PR-6 de la revisión de `security-architect` (§2.9).
 
 ---
 
@@ -431,6 +488,7 @@ Botón: **`Cambiar contraseña`**.
 | Contraseña cambiada          | `Contraseña actualizada.`               | `role="status"`             |
 | Username copiado             | `Usuario copiado.`                      | `role="status"`             |
 | Fallo de guardado (genérico) | `No pudimos guardar los cambios. Intenta de nuevo.` | `FormAlert` (`role="alert"`) |
+| Perfil inexistente o no visible | `No pudimos encontrar ese perfil.` | `EmptyState` (§3.5, anti-enumeración) |
 | Sin biografía                | `Sin biografía.`                        | texto muted en modo vista   |
 
 Todo el copy visible va en español; los identificadores, en inglés (regla del
@@ -501,7 +559,7 @@ por ser decorativos (el texto del botón nombra la acción).
 | Bio ausente                  | Modo vista: línea `Sin biografía.` en muted. No se pinta un `Bio:` vacío.                                                                  |
 | Foto ausente                 | Iniciales (`givenName[0] + familyName[0]`) sobre `--surface-muted`, misma métrica que hoy.                                                  |
 | Imagen rota (`onError`)      | Vuelve a iniciales: no se queda un hueco ni un icono de imagen rota.                                                                        |
-| Usuario inexistente          | `EmptyState` "Usuario no encontrado" (sin cambios).                                                                                        |
+| Usuario inexistente          | `EmptyState` con copy genérico "No pudimos encontrar ese perfil." (§3.5, anti-enumeración).                                                          |
 | Sin sesión                   | `SessionProvider` ya redirige a `/login`; no se duplica aquí.                                                                               |
 
 ---
@@ -594,12 +652,12 @@ Sin tokens nuevos. La vista usa exclusivamente los semánticos ya definidos en
 
 | Test                                 | Qué cubre                                                                                                                                              |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `validation/profile.test.ts`         | Bio vacía → `null`; 160 car. pasa, 161 falla; trim; archivo: tipo inválido, > 5 MB, vacío, PNG y JPEG válidos; patch sin campos → `empty_patch`; patch con `role` **rechazado** por `.strict()`; contraseña: corta, mismatch, igual a la actual, espacios preservados en la actual |
+| `validation/profile.test.ts`         | Bio vacía → `null`; 160 car. pasa, 161 falla; trim; archivo: tipo inválido, > 5 MB, vacío, PNG y JPEG válidos; **data URL: prefijo correcto pasa, prefijo `data:image/svg+xml` rechazado, longitud > `AVATAR_DATA_URL_MAX_CHARS` rechazada**; patch sin campos → `empty_patch`; patch con `role` **rechazado** por `.strict()`; contraseña: corta, mismatch, igual a la actual, espacios preservados en la actual |
 | `avatar.test.tsx`                    | Con `avatarUrl` → `<img alt="">`; sin él → iniciales; `onError` → iniciales; iniciales `aria-hidden`                                                    |
 | `avatar-uploader.test.tsx`           | Archivo válido → previsualización; inválido → error y **la imagen anterior se conserva**; `Quitar foto` solo con foto; `accept` correcto; contador/label copy |
 | `profile-form.test.tsx`              | Precarga; guardar deshabilitado sin cambios; errores con `aria-invalid` y `FormAlert`; contador 0/160 y `aria-hidden`; `Cancelar` descarta; `autoComplete` correctos; `@username` no editable |
 | `password-form.test.tsx`             | Mismatch y corta → errores; éxito → campos limpios + `role="status"`; `current-password`/`new-password`; sin medidor de fuerza                          |
-| `user-profile-view.test.tsx`         | **Ajeno**: sin correo en ningún sitio, sin botones de edición; **propio**: correo visible, `Editar perfil` conmuta el formulario, contador por estado solo propio; publicaciones en **un solo** contenedor de columna (sin `md:grid-cols-2`); usuario inexistente → `EmptyState`; un solo `h1` |
+| `user-profile-view.test.tsx`         | **Ajeno**: sin correo en ningún sitio, sin botones de edición; **propio**: correo visible, `Editar perfil` conmuta el formulario, contador por estado solo propio; publicaciones en **un solo** contenedor de columna (sin `md:grid-cols-2`); usuario inexistente → copy genérico "No pudimos encontrar ese perfil." y **sin** el texto enumerador "No existe ningún usuario registrado"; un solo `h1` |
 | `post-repository.contract.test.ts`   | `findByUsername` encuentra y devuelve `null`; `update` aplica el parche, ignora campos no incluidos, no toca `role`/`id`/`createdAt`, id inexistente → `null` |
 | `auth-gateway.test.ts`               | `changePassword` valida formatos y simula éxito; no rompe con sesión inexistente                                                                        |
 
@@ -679,20 +737,27 @@ con `URL.createObjectURL`/data URL es instantánea y no necesita subida previa.
 El corte de 5 MB es generoso para un retrato y evita un payload absurdo en la
 futura ruta de uploads.
 
-### 10.7 Cambiar contraseña, sí; con revisión obligatoria
+### 10.7 Cambiar contraseña, sí; revisada por `security-architect`
 
 Toca la joya **P0 credenciales** (`crown-jewels.md` §2), así que la regla del
 proyecto es clara: `security-architect` revisa este diseño antes de escribir la
-implementación, y `blue-team` verifica los controles al llegar. Se incluye
+implementación. **La revisión se hizo el 2026-10-08** (hallazgos PR-1..PR-8):
+la limitación de la fase estática (no puede verificar la contraseña actual) se
+convirtió en **requisito de release** (§2.4) y los controles de backend
+pendientes (rate limit, verificación argon2id) quedaron en §2.9. `blue-team`
+verificará esos controles al llegar la implementación. Se incluye la sección
 porque un perfil sin gestión de contraseña deja la P0 a medio camino, y porque
 la política ya está escrita (`auth.md` §4.2, §10.5): no hay que inventar nada,
-solo exponerla. La limitación de la fase estática (no puede verificar la
-contraseña actual) está declarada en §2.4 con su warning; el formulario se
-diseña igual que funcionará con backend.
+solo exponerla. El formulario se diseña igual que funcionará con backend.
 
 ### 10.8 Persistencia en memoria, no `localStorage`
 
-`update` muta el mismo `mockUsers` que leen navbar, feed y detalle: la demoparacece real mientras dura la sesión. `localStorage` sobreviviría a recargas,pero crearía una fuente de verdad paralela que nadie más leería y lógica decustom sync que después hay que borrar. La regla del proyecto es que los datosestáticos viven en `src/data/` y los mock no persisten; el perfil no es laexcepción.
+`update` muta el mismo `mockUsers` que leen navbar, feed y detalle: la demo
+parece real mientras dura la sesión. `localStorage` sobreviviría a recargas,
+pero crearía una fuente de verdad paralela que nadie más leería y lógica de
+custom sync que después hay que borrar. La regla del proyecto es que los datos
+estáticos viven en `src/data/` y los mock no persisten; el perfil no es la
+excepción.
 
 ### 10.9 El contador por estado solo en el perfil propio
 
