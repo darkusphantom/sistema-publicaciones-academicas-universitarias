@@ -30,9 +30,20 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# ── Secretos: NUNCA al repo (el repositorio es PÚBLICO) ───────────────────────
+# Variables de entorno reales (.env, .env.local, .env.production, .env.* …).
+# Solo se versiona `.env.example` con placeholders, sin valores reales.
 .env*
 !.env.example
+# Otros archivos que suelen contener secretos.
+.envrc
+*.key
+*.p12
+*.pfx
+*.keystore
+# Configs locales de herramientas MCP que pueden llevar claves de API.
+.mcp.json
+.cursor/mcp.json
 
 # vercel
 .vercel

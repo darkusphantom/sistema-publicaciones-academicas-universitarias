@@ -141,6 +141,8 @@ Documentación de la API: [`docs/architecture/api-structure.md`](docs/architectu
 
 > Nota: el proyecto usa `pnpm`; Vercel lo detecta por el `packageManager` declarado en `package.json` y el `pnpm-lock.yaml`.
 
+> **Despliegue unificado (2026-10-15):** la **API (Hono) va dentro de la misma app Next.js** (Route Handler `src/app/api/v1/[[...route]]/route.ts`), así que es **un solo proyecto en Vercel** y **un solo dominio** (cookies first-party, sin CORS cross-origin). Variables de entorno a configurar en Vercel: `CORS_ORIGINS`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS` y, cuando exista el esquema, `DATABASE_URL` (Supabase) y `SUPABASE_URL`. Detalles de seguridad en [`docs/security/despliegue-unificado.md`](docs/security/despliegue-unificado.md).
+
 ## Calidad
 
 - **Gate pre-commit (Husky)**: cada commit ejecuta `pnpm lint` y `pnpm test:coverage` (umbral ≥ 80%). Detalles en [`docs/husky.md`](docs/husky.md).

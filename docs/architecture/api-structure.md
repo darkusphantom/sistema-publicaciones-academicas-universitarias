@@ -103,9 +103,10 @@ apps/api/
     │   ├── admin.routes.ts      → /admin/users/:id/role, /admin/posts/:id/visibility
     │   └── openapi.ts           → documento OpenAPI + /openapi.json, /docs
     └── infrastructure/          → adaptadores de los puertos
-        ├── repositories/
-        │   ├── in-memory/       → user-store + InMemoryPostRepository / InMemoryUserRepository [esta entrega: contract tests]
-        │   └── postgres/        → PostgresPostRepository / PostgresUserRepository    [futuro]
+        └── repositories/
+            ├── create-repositories.ts → selecciona Postgres (si `DATABASE_URL`) o in-memory [2026-10-15]
+            ├── in-memory/       → user-store + InMemoryPostRepository / InMemoryUserRepository [esta entrega: contract tests]
+            └── postgres/        → PostgresPostRepository / PostgresUserRepository (stubs que lanzan 501) [scaffold 2026-10-15]
         └── auth/                → auth.config.ts + memory-auth-adapter + auth.hono.ts [esta entrega]
 ```
 
@@ -791,3 +792,23 @@ El `developer` marca el scaffold como terminado cuando, verificablemente:
 - Regla de visibilidad del feed a replicar en servidor: `src/lib/visibility.ts`.
 - Nombres wire de query del feed: `src/lib/filters.ts`.
 - Joyas de la corona: `docs/security/crown-jewels.md`.
+
+---
+
+## 16. Montaje en Next.js — despliegue unificado (2026-10-15)
+
+La API se monta **dentro de la propia aplicación Next.js** para tener **un único
+despliegue** en Vercel (plan gratuito) y **un solo origen**:
+
+- Route Handler: `src/app/api/v1/[[...route]]/route.ts` — importa `createApp` de
+  `apps/api/src/app.ts` y expone `app.fetch` (estándar Web `Request`/`Response`) en
+  `GET/POST/PATCH/PUT/DELETE/OPTIONS`, con `runtime = "nodejs"` y
+  `dynamic = "force-dynamic"`.
+- `next.config.ts`: `serverExternalPackages: ["pino", "pino-http"]`.
+- El código de la API **no cambia**: `apps/api` sigue ejecutándose y testándose con
+  `tsx`/Vitest. En serverless no se usa `@hono/node-server`/`serve()`.
+- Selección de persistencia: `createRepositories(env, store)` usa **PostgreSQL
+  (Supabase)** si hay `DATABASE_URL`; si no, adaptadores **en memoria** (solo
+  demo/desarrollo).
+- Seguridad del montaje (cookies first-party, Supabase solo desde el backend,
+  rate limit en serverless, secretos): ver `docs/security/despliegue-unificado.md`.

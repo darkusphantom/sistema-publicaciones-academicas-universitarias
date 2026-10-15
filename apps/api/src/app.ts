@@ -6,8 +6,7 @@ import type { PostRepository } from "./domain/post";
 import type { UserRepository } from "./domain/user";
 import type { AppAuth } from "./infrastructure/auth/auth.config";
 import { createAuth } from "./infrastructure/auth/auth.config";
-import { InMemoryPostRepository } from "./infrastructure/repositories/in-memory/in-memory-post-repository";
-import { InMemoryUserRepository } from "./infrastructure/repositories/in-memory/in-memory-user-repository";
+import { createRepositories } from "./infrastructure/repositories/create-repositories";
 import { MemoryUserStore } from "./infrastructure/repositories/in-memory/user-store";
 import { bodyLimitMiddleware } from "./middleware/body-limit";
 import { corsWhitelist } from "./middleware/cors";
@@ -62,8 +61,9 @@ export type AppOptions = {
 export function createApp(options: AppOptions): Hono {
   const { env, logger = pino({ level: env.LOG_LEVEL }) } = options;
   const store = options.store;
-  const posts = options.posts ?? new InMemoryPostRepository(store);
-  const users = options.users ?? new InMemoryUserRepository(store);
+  const defaults = createRepositories(env, store);
+  const posts = options.posts ?? defaults.posts;
+  const users = options.users ?? defaults.users;
   const auth = options.auth ?? createAuth(env, store);
   const limiter = new MemoryRateLimiter(
     env.RATE_LIMIT_MAX,
