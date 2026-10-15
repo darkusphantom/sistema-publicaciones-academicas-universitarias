@@ -58,6 +58,12 @@ export function createAuth(env: Env, store: MemoryUserStore) {
     session: {
       expiresIn: SESSION_EXPIRES_IN_SECONDS,
       updateAge: SESSION_UPDATE_AGE_SECONDS,
+      // La cookie de sesión transporta SOLO un token opaco; NO se cachea la
+      // sesión ni datos del usuario en la cookie. El rol se relee del store por
+      // petición (R14). Se fija explícitamente en `false` (aunque en v1.7.7 el
+      // `cookieCache` es opt-in) para que ningún cambio de configuración futuro
+      // meta información relevante en el cookie jar.
+      cookieCache: { enabled: false },
     },
     emailAndPassword: {
       enabled: true,

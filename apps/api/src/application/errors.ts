@@ -49,6 +49,20 @@ export class ValidationError extends AppError {
   }
 }
 
+/**
+ * Funcionalidad aún no implementada → 501.
+ *
+ * Se usa en el scaffold del adaptador PostgreSQL (Supabase): las funciones
+ * existen y fallan de forma explícita en lugar de simular datos en memoria. Al
+ * modelarse el esquema, se implementan contra la base de datos real.
+ */
+export class NotImplementedError extends AppError {
+  constructor(message = "Funcionalidad no implementada todavía") {
+    super(message, 501, "not_implemented");
+    this.name = "NotImplementedError";
+  }
+}
+
 /** Credenciales inválidas (R13: 401 idéntico en todos los casos). */
 export class InvalidCredentialsError extends AppError {
   constructor() {
