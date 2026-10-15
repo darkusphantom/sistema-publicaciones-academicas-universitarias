@@ -119,10 +119,16 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ CORS_ORIGINS: "   " })).toThrow(/Invalid environment/);
   });
 
-  it("keeps DATABASE_URL as an optional reserved key", () => {
-    const withDb = parseEnv({ DATABASE_URL: "postgresql://localhost:5432/red_facyt" });
-    expect(withDb.DATABASE_URL).toBe("postgresql://localhost:5432/red_facyt");
-    const withoutDb = parseEnv({});
-    expect(withoutDb.DATABASE_URL).toBeUndefined();
+  it("keeps the Supabase keys as optional reserved keys", () => {
+    const withSupabase = parseEnv({
+      SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_SECRET_KEY: "sb_secret_example",
+    });
+    expect(withSupabase.SUPABASE_URL).toBe("https://example.supabase.co");
+    expect(withSupabase.SUPABASE_SECRET_KEY).toBe("sb_secret_example");
+
+    const without = parseEnv({});
+    expect(without.SUPABASE_URL).toBeUndefined();
+    expect(without.SUPABASE_SECRET_KEY).toBeUndefined();
   });
 });

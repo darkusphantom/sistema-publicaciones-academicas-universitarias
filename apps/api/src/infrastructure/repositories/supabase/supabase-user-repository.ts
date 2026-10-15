@@ -5,26 +5,21 @@ import type {
   UserRole,
 } from "../../../domain/user";
 import { NotImplementedError } from "../../../application/errors";
+import type { SupabaseClient } from "./supabase-client";
 
 /**
- * Scaffold del adaptador PostgreSQL (Supabase) del puerto `UserRepository`.
+ * Scaffold del adaptador de `UserRepository` sobre la **API de Supabase**.
  *
- * **Funciones vacías a propósito** hasta que exista el esquema de la base de
- * datos. Cada método lanza `NotImplementedError` (→ 501) para fallar de forma
- * explícita. La exclusión de `email`/`role` en `listAuthors` (R18) y la
- * actualización de rol con efecto inmediato (R14) se conservan en el contrato;
- * la implementación SQL debe respetarlas.
+ * **Funciones vacías a propósito** hasta que exista el esquema. Cada método
+ * lanza `NotImplementedError` (→ 501). El contrato conserva la exclusión de
+ * `email`/`role` en `listAuthors` (R18) y la actualización de rol con efecto
+ * inmediato (R14); la implementación contra las tablas debe respetarlas.
  */
-export class PostgresUserRepository implements UserRepository {
+export class SupabaseUserRepository implements UserRepository {
   /**
-   * @param connectionString - Cadena `postgresql://…` de Supabase.
-   * @throws Error si la cadena viene vacía (fail-fast de configuración).
+   * @param client - Cliente de Supabase (secret key).
    */
-  constructor(connectionString: string) {
-    if (!connectionString) {
-      throw new Error("PostgresUserRepository requires a DATABASE_URL");
-    }
-  }
+  constructor(private readonly client: SupabaseClient) {}
 
   /**
    * (Contrato) Autores con al menos una publicación, sin `email` ni `role`.
@@ -32,7 +27,7 @@ export class PostgresUserRepository implements UserRepository {
    * @throws NotImplementedError hasta que exista el esquema.
    */
   async listAuthors(): Promise<AuthorOption[]> {
-    throw new NotImplementedError("PostgresUserRepository.listAuthors");
+    throw new NotImplementedError("SupabaseUserRepository.listAuthors");
   }
 
   /**
@@ -41,7 +36,7 @@ export class PostgresUserRepository implements UserRepository {
    * @throws NotImplementedError hasta que exista el esquema.
    */
   async findById(_id: string): Promise<User | null> {
-    throw new NotImplementedError("PostgresUserRepository.findById");
+    throw new NotImplementedError("SupabaseUserRepository.findById");
   }
 
   /**
@@ -50,7 +45,7 @@ export class PostgresUserRepository implements UserRepository {
    * @throws NotImplementedError hasta que exista el esquema.
    */
   async findByUsername(_username: string): Promise<User | null> {
-    throw new NotImplementedError("PostgresUserRepository.findByUsername");
+    throw new NotImplementedError("SupabaseUserRepository.findByUsername");
   }
 
   /**
@@ -59,7 +54,7 @@ export class PostgresUserRepository implements UserRepository {
    * @throws NotImplementedError hasta que exista el esquema.
    */
   async findByEmail(_email: string): Promise<User | null> {
-    throw new NotImplementedError("PostgresUserRepository.findByEmail");
+    throw new NotImplementedError("SupabaseUserRepository.findByEmail");
   }
 
   /**
@@ -68,6 +63,6 @@ export class PostgresUserRepository implements UserRepository {
    * @throws NotImplementedError hasta que exista el esquema.
    */
   async updateRole(_id: string, _role: UserRole): Promise<User | null> {
-    throw new NotImplementedError("PostgresUserRepository.updateRole");
+    throw new NotImplementedError("SupabaseUserRepository.updateRole");
   }
 }

@@ -104,9 +104,9 @@ apps/api/
     │   └── openapi.ts           → documento OpenAPI + /openapi.json, /docs
     └── infrastructure/          → adaptadores de los puertos
         └── repositories/
-            ├── create-repositories.ts → selecciona Postgres (si `DATABASE_URL`) o in-memory [2026-10-15]
+            ├── create-repositories.ts → elige Supabase (si SUPABASE_URL + SUPABASE_SECRET_KEY) o in-memory [2026-10-15]
             ├── in-memory/       → user-store + InMemoryPostRepository / InMemoryUserRepository [esta entrega: contract tests]
-            └── postgres/        → PostgresPostRepository / PostgresUserRepository (stubs que lanzan 501) [scaffold 2026-10-15]
+            └── supabase/        → cliente supabase-js + SupabasePostRepository / SupabaseUserRepository (stubs 501) [scaffold 2026-10-15]
         └── auth/                → auth.config.ts + memory-auth-adapter + auth.hono.ts [esta entrega]
 ```
 
@@ -207,7 +207,7 @@ El scaffold puede incluir un handler de apagado limpio (`SIGTERM`/`SIGINT`) que 
 
 - **Fail-fast**: si falta una variable requerida (p. ej. `CORS_ORIGINS` en `NODE_ENV=production`), `parseEnv` lanza error y el proceso no arranca. Nunca defaults silenciosos para secretos.
 - **`.env.example`** con claves y comentarios, **sin valores reales**. `.gitignore` raíz ya ignora `.env*` salvo `.env.example` (verificado).
-- **Sin secretos en el scaffold** (no hay DB ni auth aún), pero el esquema ya reserva las claves futuras (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`) como `optional` hasta que existan, para que el contrato de config no cambie.
+- **Sin secretos en el scaffold**, pero el esquema reserva las claves de integración como `optional` hasta que existan: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_JWKS_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
 
 Claves del scaffold:
 
@@ -220,7 +220,7 @@ Claves del scaffold:
 | `MAX_BODY_BYTES` | number | `102_400` (100 KB) | no | Límite global; rutas con multipart (uploads) lo ajustarán. |
 | `LOG_LEVEL` | string | `info` | no | Para `pino`. |
 
-Futuras (cuando existan): `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`.
+Futuras (cuando existan): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_JWKS_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`.
 
 ---
 
@@ -807,8 +807,6 @@ despliegue** en Vercel (plan gratuito) y **un solo origen**:
 - `next.config.ts`: `serverExternalPackages: ["pino", "pino-http"]`.
 - El código de la API **no cambia**: `apps/api` sigue ejecutándose y testándose con
   `tsx`/Vitest. En serverless no se usa `@hono/node-server`/`serve()`.
-- Selección de persistencia: `createRepositories(env, store)` usa **PostgreSQL
-  (Supabase)** si hay `DATABASE_URL`; si no, adaptadores **en memoria** (solo
-  demo/desarrollo).
+- Selección de persistencia: `createRepositories(env, store)` usa **adaptadores Supabase** (`@supabase/supabase-js` → Data API) si hay `SUPABASE_URL` + `SUPABASE_SECRET_KEY`; si no, adaptadores **en memoria** (solo demo/desarrollo). También `PostgresPostRepository`/`PostgresUserRepository` fueron reemplazados por `SupabasePostRepository`/`SupabaseUserRepository` (stubs que lanzan 501).
 - Seguridad del montaje (cookies first-party, Supabase solo desde el backend,
   rate limit en serverless, secretos): ver `docs/security/despliegue-unificado.md`.
