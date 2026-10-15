@@ -26,8 +26,17 @@ export const envSchema = z.object({
   LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])
     .default("info"),
-  /** Cadena de conexión a PostgreSQL (futuro). */
-  DATABASE_URL: z.string().optional(),
+  /**
+   * Acceso a Supabase vía su API (`@supabase/supabase-js`). Solo backend.
+   * `SUPABASE_URL` + `SUPABASE_SECRET_KEY` activan los adaptadores Supabase.
+   */
+  SUPABASE_URL: z.string().url().optional(),
+  /** Secret key (bypassa RLS): SOLO servidor, nunca al cliente. */
+  SUPABASE_SECRET_KEY: z.string().optional(),
+  /** Publishable key (pública); no sirve para la Data API. */
+  SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
+  /** URL del JWKS de Supabase Auth (verificación de JWT). */
+  SUPABASE_JWKS_URL: z.string().url().optional(),
   /** Secreto de firma de sesiones de Better Auth (≥ 32 bytes). */
   BETTER_AUTH_SECRET: z
     .string()

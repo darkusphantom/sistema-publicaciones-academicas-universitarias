@@ -37,16 +37,20 @@ cross-origin ni CSRF cross-site.
 - Al ser **same-origin**, `SameSite=Lax` basta: no se requiere
   `crossSubDomainCookies`.
 
-### 2.2 Supabase (base de datos) — no exponer la infraestructura
+### 2.2 Supabase (base de datos) — acceso vía API, solo backend
 - El frontend **nunca** habla con Supabase: toda la BD pasa por la API.
 - **Ninguna clave de Supabase en el cliente** (ni `NEXT_PUBLIC_*`, ni bundles).
-- La **`service_role`/secret key** (bypassa RLS) es **solo de servidor**.
-- Pendiente operativo: **desactivar la Data API (PostgREST, `/rest/v1/`)** en Supabase
-  para que la superficie no quede publicada (hoy responde `401` pidiendo `apikey`,
-  con `access-control-allow-origin: *`). Alternativa/complemento: **RLS + policies**
-  en todas las tablas como defensa en profundidad (`crown-jewels.md` P0 BD).
-- Conexión prevista: cadena del **pooler en modo transacción** (puerto 6543) desde
-  serverless; consultas **parametrizadas** (anti SQL injection).
+- El backend usa la **secret key** (`sb_secret_…`, bloquea/bypassa RLS) con
+  `@supabase/supabase-js`. **Solo servidor.**
+- 🔎 Verificado en el proyecto real: la **publishable key devuelve `401` en
+  `/rest/v1/`** ("Secret API key required") → solo la secret key accede a la Data
+  API. El frontend, por tanto, no puede consultar Supabase aunque quisiera.
+- ⚠️ **La Data API (`/rest/v1/`) queda publicada** por diseño (es el endpoint que
+  consume el backend); no se puede ocultar. Se mitiga con **RLS + policies** en
+  todas las tablas y **revocando grants de `anon`/`authenticated`** como defensa en
+  profundidad (`crown-jewels.md` P0 BD).
+- Decisión del equipo: **no** se usa conexión directa a PostgreSQL (sin
+  `DATABASE_URL` ni driver `pg`).
 
 ### 2.3 Superficie pública y exposición de la API
 - **OpenAPI/`/docs` bloqueados en producción** (`OPENAPI_ENABLED` y `NODE_ENV`); en
@@ -97,8 +101,8 @@ En modo producción local (`next build` + `next start`):
 | `GET /` (web) | 200 |
 
 ## 4. Pendientes de seguridad
-1. Rotar las credenciales expuestas (Trello, y las que apliquen).
-2. Desactivar la Data API de Supabase (o RLS + policies obligatorias).
+1. Rotar las credenciales expuestas (Trello y la **secret key de Supabase**).
+2. Supabase: **RLS + policies** en todas las tablas y **revocar grants** de `anon`/`authenticated` (la Data API queda publicada; la secret key la bypassa, así que RLS es defensa en profundidad).
 3. Store compartido del rate limiter (Upstash) en serverless.
 4. Persistencia real (adaptadores PostgreSQL) — hoy el store en memoria es **solo
    demo**: en serverless las sesiones son por instancia.

@@ -21,7 +21,7 @@ describe("OpenAPI routes", () => {
 
     // R17: sin secretos ni datos internos.
     expect(text).not.toMatch(/secret/i);
-    expect(text).not.toMatch(/BETTER_AUTH|CORS_ORIGINS|DATABASE_URL/);
+    expect(text).not.toMatch(/BETTER_AUTH|CORS_ORIGINS|SUPABASE_SECRET_KEY/);
     expect(text).not.toContain("src/");
     expect(text).not.toContain("test-secret");
   });

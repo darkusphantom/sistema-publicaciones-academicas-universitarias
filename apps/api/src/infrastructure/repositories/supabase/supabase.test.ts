@@ -7,11 +7,15 @@ import { createRepositories } from "../create-repositories";
 import { InMemoryPostRepository } from "../in-memory/in-memory-post-repository";
 import { InMemoryUserRepository } from "../in-memory/in-memory-user-repository";
 import { MemoryUserStore } from "../in-memory/user-store";
-import { PostgresPostRepository } from "./postgres-post-repository";
-import { PostgresUserRepository } from "./postgres-user-repository";
+import { createSupabaseClient } from "./supabase-client";
+import { SupabasePostRepository } from "./supabase-post-repository";
+import { SupabaseUserRepository } from "./supabase-user-repository";
 
-/** Cadena ficticia: los stubs no abren conexión, solo validan que exista. */
-const CONNECTION = "postgresql://postgres.ref:secret@aws-0.pooler.supabase.com:5432/postgres";
+/** Entorno de Supabase ficticio: los stubs no hacen red, solo se construyen. */
+const SUPABASE_ENV = {
+  SUPABASE_URL: "https://example.supabase.co",
+  SUPABASE_SECRET_KEY: "sb_secret_example",
+};
 
 /** Sesión mínima para las firmas del contrato. */
 const SESSION: Session = {
@@ -19,14 +23,21 @@ const SESSION: Session = {
   expiresAt: "2099-01-01T00:00:00Z",
 };
 
-describe("Postgres adapters (scaffold sin implementar)", () => {
-  it("falla rápido si falta la cadena de conexión", () => {
-    expect(() => new PostgresPostRepository("")).toThrow(/DATABASE_URL/);
-    expect(() => new PostgresUserRepository("")).toThrow(/DATABASE_URL/);
+describe("createSupabaseClient", () => {
+  it("falla si faltan SUPABASE_URL o SUPABASE_SECRET_KEY", () => {
+    const env = parseEnv({ SUPABASE_URL: "https://example.supabase.co" });
+    expect(() => createSupabaseClient(env)).toThrow(/SUPABASE_URL and SUPABASE_SECRET_KEY/);
   });
 
+  it("construye el cliente con URL + secret key", () => {
+    const env = parseEnv(SUPABASE_ENV);
+    expect(createSupabaseClient(env)).toBeDefined();
+  });
+});
+
+describe("Supabase adapters (scaffold sin implementar)", () => {
   it("PostRepository: cada método lanza NotImplementedError (no simula datos)", async () => {
-    const repo = new PostgresPostRepository(CONNECTION);
+    const repo = new SupabasePostRepository(createSupabaseClient(parseEnv(SUPABASE_ENV)));
     await expect(
       repo.findVisible(DEFAULT_POST_FILTERS, { limit: 6, offset: 0 }, SESSION),
     ).rejects.toBeInstanceOf(NotImplementedError);
@@ -53,11 +64,9 @@ describe("Postgres adapters (scaffold sin implementar)", () => {
   });
 
   it("UserRepository: cada método lanza NotImplementedError", async () => {
-    const repo = new PostgresUserRepository(CONNECTION);
+    const repo = new SupabaseUserRepository(createSupabaseClient(parseEnv(SUPABASE_ENV)));
     await expect(repo.listAuthors()).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(repo.findById("u-1")).rejects.toBeInstanceOf(
-      NotImplementedError,
-    );
+    await expect(repo.findById("u-1")).rejects.toBeInstanceOf(NotImplementedError);
     await expect(repo.findByUsername("a.rivas")).rejects.toBeInstanceOf(
       NotImplementedError,
     );
@@ -71,21 +80,17 @@ describe("Postgres adapters (scaffold sin implementar)", () => {
 });
 
 describe("createRepositories", () => {
-  it("sin DATABASE_URL usa los adaptadores en memoria (fallback de desarrollo)", () => {
+  it("sin claves de Supabase usa los adaptadores en memoria (fallback de desarrollo)", () => {
     const env = parseEnv({ NODE_ENV: "test", LOG_LEVEL: "silent" });
     const repos = createRepositories(env, new MemoryUserStore());
     expect(repos.posts).toBeInstanceOf(InMemoryPostRepository);
     expect(repos.users).toBeInstanceOf(InMemoryUserRepository);
   });
 
-  it("con DATABASE_URL usa los adaptadores PostgreSQL (Supabase)", () => {
-    const env = parseEnv({
-      NODE_ENV: "test",
-      LOG_LEVEL: "silent",
-      DATABASE_URL: CONNECTION,
-    });
+  it("con SUPABASE_URL + SUPABASE_SECRET_KEY usa los adaptadores de Supabase", () => {
+    const env = parseEnv(SUPABASE_ENV);
     const repos = createRepositories(env, new MemoryUserStore());
-    expect(repos.posts).toBeInstanceOf(PostgresPostRepository);
-    expect(repos.users).toBeInstanceOf(PostgresUserRepository);
+    expect(repos.posts).toBeInstanceOf(SupabasePostRepository);
+    expect(repos.users).toBeInstanceOf(SupabaseUserRepository);
   });
 });
