@@ -1,4 +1,11 @@
 import { z } from "zod";
+import type { PostCategory, ResearchArea } from "./post";
+import {
+  POST_CATEGORIES,
+  POST_TYPES,
+  RESEARCH_AREAS,
+  isResearchAreaInCategory,
+} from "./taxonomy";
 
 /**
  * Esquemas zod compartidos de la API (requisito R8 de threat-model-api.md).
@@ -42,17 +49,14 @@ export const idSchema = z.string().min(1).max(64);
 /** Fecha wire del feed: YYYY-MM-DD. */
 export const dateParamSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-/** Categoría institucional de una publicación. */
-export const postCategorySchema = z.enum([
-  "noticias",
-  "eventos",
-  "defensas",
-  "investigacion",
-  "convocatorias",
-]);
+/** Rubro de clasificación de una publicación (6 valores). */
+export const postCategorySchema = z.enum(POST_CATEGORIES);
 
-/** Naturaleza del contenido según el MVP. */
-export const postTypeSchema = z.enum(["post", "articulo", "ensenanza"]);
+/** Naturaleza institucional de una publicación (5 valores). */
+export const postTypeSchema = z.enum(POST_TYPES);
+
+/** Área de investigación (39 valores: 38 específicas + `general`). */
+export const researchAreaSchema = z.enum(RESEARCH_AREAS);
 
 /** Visibilidad y estado editorial completo. */
 export const postVisibilitySchema = z.enum([
@@ -64,35 +68,86 @@ export const postVisibilitySchema = z.enum([
 /** Visibilidad que puede fijar el autor al crear/editar (`oculto` solo admin). */
 export const authorVisibilitySchema = z.enum(["publicado", "borrador"]);
 
-/** Campos editables de una publicación (forma compartida por crear/editar). */
+/** URL de imagen: solo `http`/`https`, máx. 500 (espejo de `validateImageUrl`). */
+const imageUrlSchema = z
+  .string()
+  .max(500, "invalid_image_url")
+  .refine((value) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }, "invalid_image_url");
+
+/**
+ * Añade un issue si `researchArea` no pertenece a `category`.
+ *
+ * Solo verifica cuando AMBOS campos están presentes: en un parche parcial la
+ * coherencia del par efectivo se valida en el caso de uso contra la
+ * publicación existente (`updatePost`).
+ *
+ * @param value - Objeto con `category`/`researchArea` opcionales.
+ * @param ctx   - Contexto de refinamiento de zod.
+ */
+function checkResearchAreaPair(
+  value: { category?: PostCategory; researchArea?: ResearchArea },
+  ctx: z.RefinementCtx,
+): void {
+  if (
+    value.category !== undefined &&
+    value.researchArea !== undefined &&
+    !isResearchAreaInCategory(value.researchArea, value.category)
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: "invalid_research_area",
+      path: ["researchArea"],
+    });
+  }
+}
+
+/**
+ * Campos editables de una publicación (crear/editar). Límites tomados de
+ * `wireframes_posts.md` §4.4: título 5–120, cuerpo 30–4000, imagen http/https.
+ */
 const postEditableShape = {
-  title: z.string().trim().min(1).max(200),
-  /** Cuerpo Markdown; límite anti-DoS. */
-  content: z.string().min(1).max(10000),
+  title: z.string().trim().min(5).max(120),
+  /** Cuerpo Markdown; límite anti-DoS y de producto. */
+  content: z.string().min(30).max(4000),
   category: postCategorySchema,
   type: postTypeSchema,
+  researchArea: researchAreaSchema,
   visibility: authorVisibilitySchema,
-  imageUrl: z.string().url().max(2048).nullable().optional(),
+  imageUrl: imageUrlSchema.nullable(),
 };
 
 /** Cuerpo de creación de publicación (api-structure.md §9.3). */
-export const PostDraftSchema = z.object({
-  ...postEditableShape,
-  imageUrl: postEditableShape.imageUrl.default(null),
-});
+export const PostDraftSchema = z
+  .object(postEditableShape)
+  .extend({ imageUrl: postEditableShape.imageUrl.default(null) })
+  .superRefine(checkResearchAreaPair);
 
-/** Parche de edición para autor/admin (no vacío). */
+/** Parche de edición para autor/admin (no vacío y par categoría/área coherente). */
 const postPatchShape = z.object(postEditableShape).partial();
-export const UpdatePostSchema = postPatchShape.refine(
-  (value) => Object.keys(value).length > 0,
-  { message: "empty_patch" },
-);
+export const UpdatePostSchema = postPatchShape.superRefine((value, ctx) => {
+  if (Object.keys(value).length === 0) {
+    ctx.addIssue({ code: "custom", message: "empty_patch", path: [] });
+    return;
+  }
+  checkResearchAreaPair(value, ctx);
+});
 
 /** Variante del PATCH para admin: puede fijar además `oculto` (moderación). */
 export const AdminUpdatePostSchema = postPatchShape
   .extend({ visibility: postVisibilitySchema.optional() })
-  .refine((value) => Object.keys(value).length > 0, {
-    message: "empty_patch",
+  .superRefine((value, ctx) => {
+    if (Object.keys(value).length === 0) {
+      ctx.addIssue({ code: "custom", message: "empty_patch", path: [] });
+      return;
+    }
+    checkResearchAreaPair(value, ctx);
   });
 
 /** Cuerpo de moderación de visibilidad por admin (única vía para `oculto`). */
@@ -107,7 +162,7 @@ export const SetUserRoleSchema = z.object({
 
 /**
  * Query del feed con los nombres wire del frontend (`toSearchParams` de
- * `src/lib/filters.ts`): `q`, `categoria`, `tipo`, `autor`, `estado`,
+ * `src/lib/filters.ts`): `q`, `categoria`, `tipo`, `area`, `autor`, `estado`,
  * `desde`, `hasta`, más `limit`/`offset`.
  */
 export const FeedQuerySchema = z.object({
@@ -117,6 +172,7 @@ export const FeedQuerySchema = z.object({
     .optional()
     .default("todas"),
   tipo: postTypeSchema.or(z.literal("todos")).optional().default("todos"),
+  area: researchAreaSchema.or(z.literal("todas")).optional().default("todas"),
   autor: z.string().max(64).optional().default("todos"),
   estado: postVisibilitySchema
     .or(z.literal("todos"))
@@ -161,6 +217,7 @@ export const postSchema = z
     authorId: z.string(),
     category: postCategorySchema,
     type: postTypeSchema,
+    researchArea: researchAreaSchema,
     visibility: postVisibilitySchema,
     publishedAt: z.string(),
     createdAt: z.string(),

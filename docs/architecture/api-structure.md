@@ -89,6 +89,7 @@ apps/api/
     │   ├── post.ts              → Post, PostFilters, PostPage, PageOptions, PostRepository [scaffold + escritura API]
     │   ├── user.ts              → User, UserRole, AuthorOption, UserRepository       [scaffold + extensiones API]
     │   ├── session.ts           → Session                                            [scaffold]
+    │   ├── taxonomy.ts          → catálogo rubros/tipos/áreas + isResearchAreaInCategory [esta entrega]
     │   └── validation.ts        → esquemas zod compartidos (auth, posts, feed, admin) [esta entrega]
     ├── application/             → casos de uso / servicios (inyectan puertos)
     │   ├── auth/                → register/signIn/getSession/signOut (Better Auth)    [esta entrega]
@@ -231,7 +232,7 @@ La API debe cumplir a futuro las interfaces de `src/lib/repositories/post-reposi
 
 Formas wire (deben coincidir 1:1 con `src/lib/types.ts`):
 
-- `Post`: `{ id, title, content, authorId, category, type, visibility, publishedAt, createdAt, updatedAt, imageUrl }`.
+- `Post`: `{ id, title, content, authorId, type, category, researchArea, visibility, publishedAt, createdAt, updatedAt, imageUrl }`. Taxonomía vigente (`wireframes_posts.md` §4.1–§4.2): `PostCategory` = 6 rubros (disciplinas + track), `PostType` = 5 tipos institucionales, `ResearchArea` = 39 (38 áreas + `general`).
 - `PostPage`: `{ items: Post[], total: number }` (de `post-repository.ts`).
 - `AuthorOption`: `{ id, username, fullName }`.
 - `Session`: `{ user: { id, username, role }, expiresAt }`.
@@ -240,7 +241,7 @@ Formas wire (deben coincidir 1:1 con `src/lib/types.ts`):
 **Cómo se garantiza sin rework** (verificación):
 
 - Contract tests del API (cuando existan endpoints): fixtures con las mismas formas que `src/data/*` y asserts sobre el JSON devuelto.
-- Los filtros del feed se transmiten como query params con los **nombres wire que emite el frontend** (`toSearchParams`/`fromSearchParams` de `src/lib/filters.ts`): `q`, `categoria`, `tipo`, `autor`, `estado`, `desde`, `hasta`, más paginación `limit`/`offset` (el frontend usa `limit` creciente + `offset 0` para "Cargar más"; la API debe aceptar ese patrón). Los nombres ingleses (`keyword`, `category`, …) son **campos internos** de `PostFilters`, no params wire. **Corrección de contrato**: la versión inicial de este documento listaba nombres ingleses; el frontend real serializa en español, así que la API acepta los nombres wire de `filters.ts` (desvío registrado en `progress.md`). Detalle y esquema zod en §9.3.
+- Los filtros del feed se transmiten como query params con los **nombres wire que emite el frontend** (`toSearchParams`/`fromSearchParams` de `src/lib/filters.ts`): `q`, `categoria`, `tipo`, `area`, `autor`, `estado`, `desde`, `hasta`, más paginación `limit`/`offset` (el frontend usa `limit` creciente + `offset 0` para "Cargar más"; la API debe aceptar ese patrón). Los nombres ingleses (`keyword`, `category`, …) son **campos internos** de `PostFilters`, no params wire. **Corrección de contrato**: la versión inicial de este documento listaba nombres ingleses; el frontend real serializa en español, así que la API acepta los nombres wire de `filters.ts` (desvío registrado en `progress.md`). Detalle y esquema zod en §9.3.
 - Cualquier desvío de contrato se registra en `progress.md` (como ya ocurrió con `findAll→findVisible`).
 
 ---
@@ -255,7 +256,7 @@ Prefijo de versión **`/api/v1`**. La versión protege el contrato del frontend 
 | `authGateway.signUp(givenName, familyName, email, password)` | `/api/v1/auth/register` | POST | público | `{ givenName, familyName, email, password }` | `Session` + cookie |
 | `authGateway.getSession()` | `/api/v1/auth/session` | GET | sesión (cookie) | — | `Session` o 401 |
 | `authGateway.signOut()` | `/api/v1/auth/logout` | POST | sesión | — | 204 (invalida cookie) |
-| `postRepo.findVisible(filters, page, session)` | `/api/v1/posts` | GET | sesión | query: `q, categoria, tipo, autor, estado, desde, hasta, limit, offset` (ver §9.3) | `PostPage` |
+| `postRepo.findVisible(filters, page, session)` | `/api/v1/posts` | GET | sesión | query: `q, categoria, tipo, area, autor, estado, desde, hasta, limit, offset` (ver §9.3) | `PostPage` |
 | `postRepo.findById(id)` | `/api/v1/posts/:id` | GET | sesión | — | `Post` o 404 |
 | crear publicación | `/api/v1/posts` | POST | sesión | `PostDraft` (sin `authorId`: lo toma de la sesión) | `Post` (201) |
 | editar publicación | `/api/v1/posts/:id` | PATCH | autor/admin | `PostDraft` parcial | `Post` |
@@ -420,21 +421,22 @@ export const dateParamSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/); // YYYY-
 Esquemas por dominio:
 
 ```ts
-export const postCategorySchema = z.enum(["noticias", "eventos", "defensas", "investigacion", "convocatorias"]);
-export const postTypeSchema     = z.enum(["post", "articulo", "ensenanza"]);
+export const postCategorySchema = z.enum(["matematicas", "biologia", "quimica", "fisica", "computacion", "crecimiento-profesional"]); // rubro (6)
+export const postTypeSchema     = z.enum(["noticias", "eventos", "defensas", "investigacion", "convocatorias"]);                  // naturaleza (5)
 export const postVisibilitySchema = z.enum(["publicado", "borrador", "oculto"]);
+export const researchAreaSchema = z.enum([/* 38 áreas + */ "general", "estadistica", /* … */]); // 39 valores; catálogo por rubro en `domain/taxonomy.ts`
 export const authorVisibilitySchema = z.enum(["publicado", "borrador"]); // "oculto" solo vía admin (§9.6)
 
 export const PostDraftSchema = z.object({
-  title:      z.string().trim().min(1).max(200),
-  content:    z.string().min(1).max(10000),      // cuerpo Markdown; límite anti-DoS
+  title:      z.string().trim().min(5).max(120),
+  content:    z.string().min(30).max(4000),      // cuerpo Markdown; límite anti-DoS
   category:   postCategorySchema,
   type:       postTypeSchema,
+  researchArea: researchAreaSchema,              // debe pertenecer a `category` o ser "general"
   visibility: authorVisibilitySchema,            // el autor crea publicado o borrador
-  imageUrl:   z.string().url().max(2048).nullable().optional().default(null),
-});
-export const UpdatePostSchema = PostDraftSchema.partial()
-  .refine((v) => Object.keys(v).length > 0, { message: "empty_patch" });
+  imageUrl:   z.string().max(500).refine(isHttpOrHttps).nullable().optional().default(null),
+}).superRefine(checkResearchAreaPair);           // par categoría↔área coherente
+export const UpdatePostSchema = PostDraftSchema.partial() /* + empty_patch + par efectivo en el caso de uso */;
 export const AdminUpdatePostSchema = UpdatePostSchema.extend({
   // Variante del PATCH /posts/:id para admin: puede fijar además "oculto" (moderación) sin pasar por /admin/posts/:id/visibility.
   visibility: postVisibilitySchema.optional(),
@@ -449,10 +451,11 @@ export const SetUserRoleSchema = z.object({
 export const FeedQuerySchema = z.object({
   // Nombres wire en español = los que emite `toSearchParams` (src/lib/filters.ts): §6 y §9.3.
   q:          z.string().trim().max(80).optional().default(""),
-  categoria:  z.enum(["noticias", "eventos", "defensas", "investigacion", "convocatorias", "todas"]).optional().default("todas"),
-  tipo:       z.enum(["post", "articulo", "ensenanza", "todos"]).optional().default("todos"),
+  categoria:  postCategorySchema.or(z.literal("todas")).optional().default("todas"),
+  tipo:       postTypeSchema.or(z.literal("todos")).optional().default("todos"),
+  area:       researchAreaSchema.or(z.literal("todas")).optional().default("todas"),
   autor:      z.string().max(64).optional().default("todos"),
-  estado:     z.enum(["publicado", "borrador", "oculto", "todos"]).optional().default("todos"),
+  estado:     postVisibilitySchema.or(z.literal("todos")).optional().default("todos"),
   desde:      dateParamSchema.nullable().optional().default(null),
   hasta:      dateParamSchema.nullable().optional().default(null),
   limit:      z.coerce.number().int().min(1).max(100).optional().default(6), // el web usa múltiplos de 6 ("Cargar más")
@@ -486,9 +489,9 @@ export const FeedQuerySchema = z.object({
 
 **Feed (`GET /posts`)** — réplica de `src/lib/visibility.ts` + `applyFilters` de `src/lib/filters.ts`:
 1. Visibilidad: `canViewPost` (publicado → todos; borrador → autor; oculto → autor y admin).
-2. Filtros (sobre lo visible): `q` en título y cuerpo (normalización sin diacríticos), `categoria`, `tipo`, `autor`, `estado`, `desde`, `hasta`.
+2. Filtros (sobre lo visible): `q` en título y cuerpo (normalización sin diacríticos), `categoria`, `tipo`, `area`, `autor`, `estado`, `desde`, `hasta`.
 3. Orden `publishedAt` DESC; paginación `limit`/`offset`.
-4. Mapa de query a `PostFilters`: `q→keyword`, `categoria→category`, `tipo→type`, `autor→authorId`, `estado→status`, `desde→dateFrom`, `hasta→dateTo`.
+4. Mapa de query a `PostFilters`: `q→keyword`, `categoria→category`, `tipo→type`, `area→researchArea`, `autor→authorId`, `estado→status`, `desde→dateFrom`, `hasta→dateTo`.
 
 **Crear (`POST /posts`)**: `authorId` = `session.user.id` (inmutable en el body). `createdAt = updatedAt = publishedAt = now` (ISO). Respuesta `201` `Post` completo.
 

@@ -11,6 +11,7 @@ const noFilters: PostFilters = {
   keyword: "",
   category: "todas",
   type: "todos",
+  researchArea: "todas",
   authorId: "todos",
   status: "todos",
   dateFrom: null,
@@ -28,8 +29,9 @@ function makePost(overrides: Partial<Post> = {}): Post {
     title: "Test post",
     content: "Content body",
     authorId: "u-author",
-    category: "noticias",
-    type: "post",
+    category: "computacion",
+    type: "defensas",
+    researchArea: "general",
     visibility: "publicado",
     publishedAt: "2026-03-12T10:00:00Z",
     createdAt: "2026-03-12T10:00:00Z",
@@ -50,8 +52,9 @@ function makeDraft(overrides: Partial<PostDraft> = {}): PostDraft {
   return {
     title: "Nuevo",
     content: "Cuerpo",
-    category: "noticias",
-    type: "post",
+    category: "computacion",
+    type: "defensas",
+    researchArea: "general",
     visibility: "publicado",
     imageUrl: null,
     ...overrides,
@@ -206,20 +209,23 @@ describe("InMemoryPostRepository · findVisible", () => {
     expect(items.map((p) => p.id)).toEqual(["p-2", "p-3", "p-1"]);
   });
 
-  it("filters by category, type, author, status, dates and keyword", async () => {
+  it("filters by category, type, researchArea, author, status, dates and keyword", async () => {
     const repo = new InMemoryPostRepository(new MemoryUserStore());
     repo.seed([
-      makePost({ id: "p-1", category: "defensas", type: "articulo", authorId: "u-a", visibility: "publicado", publishedAt: "2026-03-01T00:00:00Z", title: "Talleres de primavera", content: "..." }),
-      makePost({ id: "p-2", category: "noticias", type: "post", authorId: "u-a", visibility: "publicado", publishedAt: "2026-03-02T00:00:00Z", title: "Noticia", content: "talleres aquí" }),
-      makePost({ id: "p-3", category: "noticias", type: "post", authorId: "u-b", visibility: "publicado", publishedAt: "2026-04-01T00:00:00Z", title: "Otra", content: "nada" }),
+      makePost({ id: "p-1", category: "computacion", type: "defensas", researchArea: "desarrollo-web", authorId: "u-a", visibility: "publicado", publishedAt: "2026-03-01T00:00:00Z", title: "Talleres de primavera", content: "..." }),
+      makePost({ id: "p-2", category: "fisica", type: "noticias", researchArea: "astronomia", authorId: "u-a", visibility: "publicado", publishedAt: "2026-03-02T00:00:00Z", title: "Noticia", content: "talleres aquí" }),
+      makePost({ id: "p-3", category: "fisica", type: "noticias", researchArea: "general", authorId: "u-b", visibility: "publicado", publishedAt: "2026-04-01T00:00:00Z", title: "Otra", content: "nada" }),
     ]);
     const session = makeSession({ id: "u-viewer" });
 
-    const byCategory = await repo.findVisible({ ...noFilters, category: "noticias" }, fullPage, session);
+    const byCategory = await repo.findVisible({ ...noFilters, category: "fisica" }, fullPage, session);
     expect(byCategory.items.map((p) => p.id)).toEqual(["p-3", "p-2"]);
 
-    const byType = await repo.findVisible({ ...noFilters, type: "articulo" }, fullPage, session);
+    const byType = await repo.findVisible({ ...noFilters, type: "defensas" }, fullPage, session);
     expect(byType.items.map((p) => p.id)).toEqual(["p-1"]);
+
+    const byArea = await repo.findVisible({ ...noFilters, researchArea: "astronomia" }, fullPage, session);
+    expect(byArea.items.map((p) => p.id)).toEqual(["p-2"]);
 
     const byAuthor = await repo.findVisible({ ...noFilters, authorId: "u-a" }, fullPage, session);
     expect(byAuthor.items.map((p) => p.id)).toEqual(["p-2", "p-1"]);

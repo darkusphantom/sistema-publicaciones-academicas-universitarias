@@ -50,6 +50,12 @@ function applyFilters(posts: Post[], filters: PostFilters): Post[] {
     if (filters.type !== "todos" && post.type !== filters.type) {
       return false;
     }
+    if (
+      filters.researchArea !== "todas" &&
+      post.researchArea !== filters.researchArea
+    ) {
+      return false;
+    }
     if (filters.authorId !== "todos" && post.authorId !== filters.authorId) {
       return false;
     }
@@ -158,6 +164,7 @@ export class InMemoryPostRepository implements PostRepository {
       authorId: draft.authorId,
       category: draft.category,
       type: draft.type,
+      researchArea: draft.researchArea,
       visibility: draft.visibility,
       publishedAt: draft.publishedAt,
       createdAt: draft.createdAt,
