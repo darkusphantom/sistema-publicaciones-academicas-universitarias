@@ -2,7 +2,8 @@ import type { Post } from "../../domain/post";
 import type { PostRepository } from "../../domain/post";
 import type { UpdatePost } from "../../domain/post";
 import type { Session } from "../../domain/session";
-import { ForbiddenError, NotFoundError } from "../errors";
+import { isResearchAreaInCategory } from "../../domain/taxonomy";
+import { ForbiddenError, NotFoundError, ValidationError } from "../errors";
 
 /** Dependencias del caso de uso de edición de publicaciones. */
 export type UpdatePostDeps = {
@@ -37,6 +38,14 @@ export function updatePost(deps: UpdatePostDeps) {
     if (patch.visibility === "oculto" && !isAdmin) {
       // Solo el admin puede fijar `oculto` (moderación, spec §9.3/R16).
       throw new ForbiddenError();
+    }
+
+    // Coherencia del par categoría ↔ área sobre el resultado EFECTIVO del
+    // parche (una edición puede cambiar solo uno de los dos; R8 servidor).
+    const effectiveCategory = patch.category ?? existing.category;
+    const effectiveArea = patch.researchArea ?? existing.researchArea;
+    if (!isResearchAreaInCategory(effectiveArea, effectiveCategory)) {
+      throw new ValidationError("invalid_research_area");
     }
 
     let publishedAt = existing.publishedAt;

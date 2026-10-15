@@ -1,5 +1,6 @@
 import type { Hono } from "hono";
 import type { RouteDeps } from "./route-deps";
+import { POST_CATEGORIES, POST_TYPES, RESEARCH_AREAS } from "../domain/taxonomy";
 
 /** Esquema de seguridad de OpenAPI: `{ scheme: [] }` (apiKey en cookie/header). */
 type SecurityRequirement = Record<string, string[]>;
@@ -70,6 +71,7 @@ export const openApiDocument: OpenApiDocument = {
           "authorId",
           "category",
           "type",
+          "researchArea",
           "visibility",
           "publishedAt",
           "createdAt",
@@ -81,11 +83,9 @@ export const openApiDocument: OpenApiDocument = {
           title: { type: "string" },
           content: { type: "string" },
           authorId: { type: "string" },
-          category: {
-            type: "string",
-            enum: ["noticias", "eventos", "defensas", "investigacion", "convocatorias"],
-          },
-          type: { type: "string", enum: ["post", "articulo", "ensenanza"] },
+          category: { type: "string", enum: [...POST_CATEGORIES] },
+          type: { type: "string", enum: [...POST_TYPES] },
+          researchArea: { type: "string", enum: [...RESEARCH_AREAS] },
           visibility: {
             type: "string",
             enum: ["publicado", "borrador", "oculto"],
@@ -106,17 +106,22 @@ export const openApiDocument: OpenApiDocument = {
       },
       PostDraft: {
         type: "object",
-        required: ["title", "content", "category", "type", "visibility"],
+        required: [
+          "title",
+          "content",
+          "category",
+          "type",
+          "researchArea",
+          "visibility",
+        ],
         properties: {
-          title: { type: "string", maxLength: 200 },
-          content: { type: "string", maxLength: 10000 },
-          category: {
-            type: "string",
-            enum: ["noticias", "eventos", "defensas", "investigacion", "convocatorias"],
-          },
-          type: { type: "string", enum: ["post", "articulo", "ensenanza"] },
+          title: { type: "string", minLength: 5, maxLength: 120 },
+          content: { type: "string", minLength: 30, maxLength: 4000 },
+          category: { type: "string", enum: [...POST_CATEGORIES] },
+          type: { type: "string", enum: [...POST_TYPES] },
+          researchArea: { type: "string", enum: [...RESEARCH_AREAS] },
           visibility: { type: "string", enum: ["publicado", "borrador"] },
-          imageUrl: { type: "string", nullable: true },
+          imageUrl: { type: "string", maxLength: 500, nullable: true },
         },
       },
       AuthorOption: {
@@ -267,6 +272,7 @@ export const openApiDocument: OpenApiDocument = {
           { name: "q", in: "query", schema: { type: "string" } },
           { name: "categoria", in: "query", schema: { type: "string" } },
           { name: "tipo", in: "query", schema: { type: "string" } },
+          { name: "area", in: "query", schema: { type: "string" } },
           { name: "autor", in: "query", schema: { type: "string" } },
           { name: "estado", in: "query", schema: { type: "string" } },
           { name: "desde", in: "query", schema: { type: "string" } },

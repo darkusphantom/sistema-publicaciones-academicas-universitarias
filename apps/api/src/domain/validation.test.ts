@@ -17,6 +17,7 @@ import {
   postCategorySchema,
   postTypeSchema,
   postVisibilitySchema,
+  researchAreaSchema,
   usernameSchema,
 } from "./validation";
 
@@ -101,19 +102,42 @@ describe("validation schemas", () => {
   });
 
   describe("domain enums", () => {
-    it("postCategorySchema accepts the five categories", () => {
-      expect(postCategorySchema.safeParse("noticias").success).toBe(true);
-      expect(postCategorySchema.safeParse("eventos").success).toBe(true);
-      expect(postCategorySchema.safeParse("defensas").success).toBe(true);
-      expect(postCategorySchema.safeParse("investigacion").success).toBe(true);
-      expect(postCategorySchema.safeParse("convocatorias").success).toBe(true);
+    it("postCategorySchema accepts the six rubros and rejects the old taxonomy", () => {
+      for (const category of [
+        "matematicas",
+        "biologia",
+        "quimica",
+        "fisica",
+        "computacion",
+        "crecimiento-profesional",
+      ]) {
+        expect(postCategorySchema.safeParse(category).success).toBe(true);
+      }
+      // La naturaleza institucional ya no es una categoría.
+      expect(postCategorySchema.safeParse("noticias").success).toBe(false);
       expect(postCategorySchema.safeParse("otro").success).toBe(false);
     });
 
-    it("postTypeSchema accepts the three types", () => {
-      expect(postTypeSchema.safeParse("post").success).toBe(true);
-      expect(postTypeSchema.safeParse("articulo").success).toBe(true);
-      expect(postTypeSchema.safeParse("ensenanza").success).toBe(true);
+    it("postTypeSchema accepts the five institutional types", () => {
+      for (const type of [
+        "noticias",
+        "eventos",
+        "defensas",
+        "investigacion",
+        "convocatorias",
+      ]) {
+        expect(postTypeSchema.safeParse(type).success).toBe(true);
+      }
+      // El antiguo conjunto (post/articulo/ensenanza) ya no es válido.
+      expect(postTypeSchema.safeParse("post").success).toBe(false);
+      expect(postTypeSchema.safeParse("articulo").success).toBe(false);
+    });
+
+    it("researchAreaSchema accepts general and the specific areas", () => {
+      expect(researchAreaSchema.safeParse("general").success).toBe(true);
+      expect(researchAreaSchema.safeParse("desarrollo-web").success).toBe(true);
+      expect(researchAreaSchema.safeParse("astronomia").success).toBe(true);
+      expect(researchAreaSchema.safeParse("inventada").success).toBe(false);
     });
 
     it("postVisibilitySchema accepts publicado/borrador/oculto", () => {
@@ -124,59 +148,87 @@ describe("validation schemas", () => {
   });
 
   describe("PostDraftSchema", () => {
+    const valid = {
+      title: "Título de la publicación",
+      content: "Contenido de la publicación con longitud suficiente.",
+      category: "computacion",
+      type: "defensas",
+      researchArea: "desarrollo-web",
+      visibility: "publicado",
+    };
+
     it("accepts a valid draft and defaults imageUrl to null", () => {
-      const result = PostDraftSchema.safeParse({
-        title: " Título ",
-        content: "Contenido",
-        category: "noticias",
-        type: "post",
-        visibility: "publicado",
-      });
+      const result = PostDraftSchema.safeParse(valid);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.title).toBe("Título");
         expect(result.data.imageUrl).toBeNull();
+        expect(result.data.researchArea).toBe("desarrollo-web");
       }
     });
 
-    it("rejects invalid category, empty title or too-long content", () => {
+    it("trims the title", () => {
+      const result = PostDraftSchema.safeParse({
+        ...valid,
+        title: "  Título válido  ",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.title).toBe("Título válido");
+    });
+
+    it("enforces title 5-120 and content 30-4000", () => {
+      expect(PostDraftSchema.safeParse({ ...valid, title: "abcd" }).success).toBe(false);
+      expect(PostDraftSchema.safeParse({ ...valid, title: "a".repeat(121) }).success).toBe(false);
+      expect(PostDraftSchema.safeParse({ ...valid, content: "a".repeat(29) }).success).toBe(false);
+      expect(PostDraftSchema.safeParse({ ...valid, content: "a".repeat(4001) }).success).toBe(false);
+    });
+
+    it("rejects an invalid category or type", () => {
+      expect(PostDraftSchema.safeParse({ ...valid, category: "nope" }).success).toBe(false);
+      expect(PostDraftSchema.safeParse({ ...valid, type: "post" }).success).toBe(false);
+    });
+
+    it("rejects a research area that does not belong to the category", () => {
+      const result = PostDraftSchema.safeParse({
+        ...valid,
+        category: "fisica",
+        researchArea: "desarrollo-web",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts general in any category", () => {
       expect(
         PostDraftSchema.safeParse({
-          title: "x",
-          content: "y",
-          category: "nope",
-          type: "post",
-          visibility: "publicado",
+          ...valid,
+          category: "fisica",
+          researchArea: "general",
         }).success,
-      ).toBe(false);
-      expect(
-        PostDraftSchema.safeParse({
-          title: "",
-          content: "y",
-          category: "noticias",
-          type: "post",
-          visibility: "publicado",
-        }).success,
-      ).toBe(false);
-      expect(
-        PostDraftSchema.safeParse({
-          title: "x",
-          content: "y".repeat(10001),
-          category: "noticias",
-          type: "post",
-          visibility: "publicado",
-        }).success,
-      ).toBe(false);
+      ).toBe(true);
     });
 
     it("rejects oculto for author drafts", () => {
       expect(
+        PostDraftSchema.safeParse({ ...valid, visibility: "oculto" }).success,
+      ).toBe(false);
+    });
+
+    it("accepts only http/https image URLs up to 500 chars", () => {
+      expect(
         PostDraftSchema.safeParse({
-          title: "x",
-          content: "y",
-          category: "noticias",
-          type: "post",
-          visibility: "oculto",
+          ...valid,
+          imageUrl: "https://img.test/a.png",
+        }).success,
+      ).toBe(true);
+      expect(
+        PostDraftSchema.safeParse({
+          ...valid,
+          imageUrl: "ftp://img.test/a.png",
+        }).success,
+      ).toBe(false);
+      expect(
+        PostDraftSchema.safeParse({
+          ...valid,
+          imageUrl: `https://x.test/${"a".repeat(600)}`,
         }).success,
       ).toBe(false);
     });
@@ -243,6 +295,7 @@ describe("validation schemas", () => {
         expect(result.data.q).toBe("");
         expect(result.data.categoria).toBe("todas");
         expect(result.data.tipo).toBe("todos");
+        expect(result.data.area).toBe("todas");
         expect(result.data.autor).toBe("todos");
         expect(result.data.estado).toBe("todos");
         expect(result.data.desde).toBeNull();
@@ -264,8 +317,11 @@ describe("validation schemas", () => {
       }
     });
 
-    it("rejects invalid category, malformed date and out-of-range limit", () => {
+    it("rejects invalid category, area, malformed date and out-of-range limit", () => {
       expect(FeedQuerySchema.safeParse({ categoria: "otra" }).success).toBe(
+        false,
+      );
+      expect(FeedQuerySchema.safeParse({ area: "inventada" }).success).toBe(
         false,
       );
       expect(FeedQuerySchema.safeParse({ desde: "2026/03/12" }).success).toBe(

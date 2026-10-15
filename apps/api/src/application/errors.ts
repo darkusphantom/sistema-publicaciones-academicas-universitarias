@@ -41,6 +41,14 @@ export class ConflictError extends AppError {
   }
 }
 
+/** Datos inválidos a nivel de negocio (p. ej. par categoría/área) → 400. */
+export class ValidationError extends AppError {
+  constructor(message = "Datos inválidos") {
+    super(message, 400, "validation_error");
+    this.name = "ValidationError";
+  }
+}
+
 /** Credenciales inválidas (R13: 401 idéntico en todos los casos). */
 export class InvalidCredentialsError extends AppError {
   constructor() {

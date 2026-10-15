@@ -1,19 +1,12 @@
 import type { Session } from "./session";
+import type { PostCategory, PostType, ResearchArea } from "./taxonomy";
 
 /**
- * Categoría institucional de una publicación (espejo de `src/lib/types.ts`).
+ * Rubro de clasificación (`PostCategory`), naturaleza institucional
+ * (`PostType`) y áreas de investigación (`ResearchArea`). El catálogo y las
+ * reglas viven en `domain/taxonomy.ts` (espejo de `src/lib/types.ts`).
  */
-export type PostCategory =
-  | "noticias"
-  | "eventos"
-  | "defensas"
-  | "investigacion"
-  | "convocatorias";
-
-/**
- * Naturaleza del contenido según el MVP (espejo de `src/lib/types.ts`).
- */
-export type PostType = "post" | "articulo" | "ensenanza";
+export type { PostCategory, PostType, ResearchArea } from "./taxonomy";
 
 /**
  * Visibilidad y estado editorial de una publicación:
@@ -32,8 +25,12 @@ export type Post = {
   /** Cuerpo completo en Markdown. */
   content: string;
   authorId: string;
-  category: PostCategory;
+  /** Naturaleza institucional. */
   type: PostType;
+  /** Rubro de clasificación (disciplina o track de desarrollo profesional). */
+  category: PostCategory;
+  /** Área de investigación; siempre pertenece a `category`. */
+  researchArea: ResearchArea;
   visibility: PostVisibility;
   /** ISO 8601. Clave primaria de orden del feed (siempre descendente). */
   publishedAt: string;
@@ -49,8 +46,12 @@ export type Post = {
  */
 export type PostFilters = {
   keyword: string;
+  /** Rubro de clasificación; `"todas"` = sin filtro. */
   category: PostCategory | "todas";
+  /** Naturaleza institucional; `"todos"` = sin filtro. */
   type: PostType | "todos";
+  /** Área de investigación; `"todas"` = sin filtro (`"general"` sí filtra). */
+  researchArea: ResearchArea | "todas";
   authorId: string | "todos";
   status: PostVisibility | "todos";
   /** `YYYY-MM-DD` o `null`. Cota inferior inclusiva. */
@@ -64,6 +65,7 @@ export const DEFAULT_POST_FILTERS: PostFilters = {
   keyword: "",
   category: "todas",
   type: "todos",
+  researchArea: "todas",
   authorId: "todos",
   status: "todos",
   dateFrom: null,
@@ -95,8 +97,12 @@ export type PageOptions = {
 export type PostDraft = {
   title: string;
   content: string;
+  /** Rubro de clasificación. */
   category: PostCategory;
+  /** Naturaleza institucional. */
   type: PostType;
+  /** Área de investigación; debe pertenecer a `category` o ser `general`. */
+  researchArea: ResearchArea;
   /** El autor solo puede crear `publicado` o `borrador`; `oculto` es de admin. */
   visibility: "publicado" | "borrador";
   imageUrl: string | null;
@@ -113,7 +119,14 @@ export type PostDraft = {
 export type UpdatePost = Partial<
   Pick<
     Post,
-    "title" | "content" | "category" | "type" | "visibility" | "imageUrl" | "publishedAt"
+    | "title"
+    | "content"
+    | "category"
+    | "type"
+    | "researchArea"
+    | "visibility"
+    | "imageUrl"
+    | "publishedAt"
   >
 >;
 

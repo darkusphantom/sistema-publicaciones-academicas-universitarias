@@ -28,8 +28,9 @@ function makePost(overrides: Partial<Post> = {}): Post {
     title: "Test",
     content: "Body",
     authorId: "u-any",
-    category: "noticias",
-    type: "post",
+    category: "computacion",
+    type: "defensas",
+    researchArea: "general",
     visibility: "publicado",
     publishedAt: "2026-03-01T00:00:00Z",
     createdAt: "2026-03-01T00:00:00Z",
@@ -104,12 +105,12 @@ describe("Posts routes · feed GET /api/v1/posts", () => {
     const { app, store, authorJar } = await setup();
     const posts = new InMemoryPostRepository(store);
     posts.seed([
-      makePost({ id: "p-1", category: "defensas", title: "Defensa de tesis", publishedAt: "2026-01-01T00:00:00Z" }),
-      makePost({ id: "p-2", category: "noticias", title: "Noticia institucional", publishedAt: "2026-03-01T00:00:00Z" }),
-      makePost({ id: "p-3", category: "noticias", title: "Otra noticia", publishedAt: "2026-02-01T00:00:00Z" }),
+      makePost({ id: "p-1", category: "fisica", researchArea: "astronomia", title: "Defensa de tesis", publishedAt: "2026-01-01T00:00:00Z" }),
+      makePost({ id: "p-2", category: "computacion", researchArea: "desarrollo-web", title: "Noticia institucional", publishedAt: "2026-03-01T00:00:00Z" }),
+      makePost({ id: "p-3", category: "computacion", researchArea: "general", title: "Otra noticia", publishedAt: "2026-02-01T00:00:00Z" }),
     ]);
     const filtered = await app.request(
-      "/api/v1/posts?categoria=noticias&limit=1&offset=0",
+      "/api/v1/posts?categoria=computacion&limit=1&offset=0",
       { headers: { cookie: authorJar.header() } },
     );
     const body = await jsonOf(filtered);
@@ -117,6 +118,13 @@ describe("Posts routes · feed GET /api/v1/posts", () => {
     expect((body.items as Array<{ id: string }>).map((p) => p.id)).toEqual([
       "p-2",
     ]);
+
+    const byArea = await app.request("/api/v1/posts?area=astronomia", {
+      headers: { cookie: authorJar.header() },
+    });
+    const areaBody = await jsonOf(byArea);
+    expect(areaBody.total).toBe(1);
+    expect((areaBody.items as Array<{ id: string }>)[0].id).toBe("p-1");
   });
 
   it("returns 400 for an invalid query", async () => {
@@ -178,9 +186,10 @@ describe("Posts routes · POST /api/v1/posts", () => {
       },
       body: JSON.stringify({
         title: "Mi publicación",
-        content: "Cuerpo",
-        category: "noticias",
-        type: "post",
+        content: "Cuerpo de la publicación de prueba con longitud suficiente.",
+        category: "computacion",
+        type: "defensas",
+        researchArea: "desarrollo-web",
         visibility: "publicado",
       }),
     });
@@ -189,6 +198,7 @@ describe("Posts routes · POST /api/v1/posts", () => {
     expect(postSchema.safeParse(body).success).toBe(true);
     expect(body.authorId).toBe(userId);
     expect(body.visibility).toBe("publicado");
+    expect(body.researchArea).toBe("desarrollo-web");
   });
 
   it("ignores authorId and role injected in the body", async () => {
@@ -202,10 +212,11 @@ describe("Posts routes · POST /api/v1/posts", () => {
         cookie: authorJar.header(),
       },
       body: JSON.stringify({
-        title: "Hack",
-        content: "Cuerpo",
-        category: "noticias",
-        type: "post",
+        title: "Intento de hackeo",
+        content: "Cuerpo de prueba con longitud suficiente para el esquema.",
+        category: "computacion",
+        type: "defensas",
+        researchArea: "general",
         visibility: "publicado",
         authorId: "u-attacker",
         role: "admin",
@@ -213,6 +224,28 @@ describe("Posts routes · POST /api/v1/posts", () => {
     });
     expect(response.status).toBe(201);
     expect((await jsonOf(response)).authorId).toBe(userId);
+  });
+
+  it("returns 400 when the research area does not belong to the category", async () => {
+    const { app, authorJar } = await setup();
+    const response = await app.request("/api/v1/posts", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-csrf-token": authorJar.get("facy.csrf_token") ?? "",
+        cookie: authorJar.header(),
+      },
+      body: JSON.stringify({
+        title: "Publicación inválida",
+        content: "Cuerpo de prueba con longitud suficiente para el esquema.",
+        category: "fisica",
+        type: "defensas",
+        researchArea: "desarrollo-web",
+        visibility: "publicado",
+      }),
+    });
+    expect(response.status).toBe(400);
+    expect(await jsonOf(response)).toMatchObject({ error: "validation_error" });
   });
 
   it("returns 400 for an invalid payload", async () => {
@@ -282,10 +315,11 @@ describe("Posts routes · PATCH and DELETE /api/v1/posts/:id", () => {
         cookie: jar.header(),
       },
       body: JSON.stringify({
-        title: "Titulo",
-        content: "Cuerpo",
-        category: "noticias",
-        type: "post",
+        title: "Titulo de prueba",
+        content: "Cuerpo de prueba con longitud suficiente para el esquema.",
+        category: "computacion",
+        type: "defensas",
+        researchArea: "general",
         visibility: "publicado",
         ...draft,
       }),
@@ -418,5 +452,23 @@ describe("Posts routes · PATCH and DELETE /api/v1/posts/:id", () => {
       },
     });
     expect(response.status).toBe(404);
+  });
+
+  it("rejects a PATCH that leaves the research area incompatible with the category (R8)", async () => {
+    const { app, store, authorJar } = await setup();
+    const id = await createOwnPost(app, store, authorJar, {
+      researchArea: "desarrollo-web",
+    });
+    const response = await app.request(`/api/v1/posts/${id}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        "x-csrf-token": authorJar.get("facy.csrf_token") ?? "",
+        cookie: authorJar.header(),
+      },
+      body: JSON.stringify({ category: "fisica" }),
+    });
+    expect(response.status).toBe(400);
+    expect(await jsonOf(response)).toMatchObject({ error: "validation_error" });
   });
 });
